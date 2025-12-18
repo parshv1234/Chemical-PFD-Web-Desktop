@@ -123,6 +123,7 @@ import GeneralSymbolSVG from "@/assets/svg/Feeders/General Symbol.svg";
 
 // Import grips data
 import gripsData from "./grips.json";
+import { ComponentItem } from "@/components/Canvas/types";
 
 export interface componentConfigEntry {
   name: string;
@@ -139,10 +140,13 @@ const getGripsForComponent = (componentName: string, category: string) => {
   const gripEntry = gripsData.find(
     (entry) => entry.component === componentName && entry.category === category
   );
-  return gripEntry?.grips || [];
+  return (gripEntry?.grips || []).map(g => ({
+    ...g,
+    side: g.side as "top" | "bottom" | "left" | "right"
+  }));
 };
 
-export const componentsConfig = {
+export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
   Compressors: {
     "Centrifugal Compressor": {
       name: "Centrifugal Compressor",
@@ -153,6 +157,7 @@ export const componentsConfig = {
       args: [],
       grips: getGripsForComponent("Centrifugal Compressor", "Compressors")
     },
+
     "Ejector Compressor": {
       name: "Ejector Compressor",
       icon: EjectorCompressorIcon,
@@ -555,6 +560,6 @@ export const componentsConfig = {
       grips: getGripsForComponent("General Symbol", "Feeders")
     }
   }
-} as const;
+};
 
 export type ComponentsConfig = typeof componentsConfig;

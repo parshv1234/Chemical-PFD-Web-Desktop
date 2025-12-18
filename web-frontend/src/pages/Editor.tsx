@@ -70,7 +70,7 @@ export default function Editor() {
   );
 
   // --- Event Listeners ---
-  
+
   // Handle keyboard events (Delete key)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -121,7 +121,7 @@ export default function Editor() {
 
     // If we dropped a sidebar item
     if (dragItemRef.current && stage) {
-      stage.setPointersPositions(e);
+      stage.setPointersPositions(e.nativeEvent);
       const pointer = stage.getRelativePointerPosition();
 
       if (pointer) {
@@ -219,7 +219,7 @@ export default function Editor() {
     setDroppedItems(prev => prev.filter(item => item.id !== itemId));
     // Also remove any connections attached to this item
     setConnections(prev => prev.filter(c => c.sourceItemId !== itemId && c.targetItemId !== itemId));
-    
+
     if (selectedItemId === itemId) {
       setSelectedItemId(null);
     }
@@ -424,9 +424,9 @@ export default function Editor() {
                     setTempConnection(prev =>
                       prev
                         ? {
-                            ...prev,
-                            waypoints: [...prev.waypoints, { x: pointer.x, y: pointer.y }],
-                          }
+                          ...prev,
+                          waypoints: [...prev.waypoints, { x: pointer.x, y: pointer.y }],
+                        }
                         : prev
                     );
                   }
@@ -465,7 +465,7 @@ export default function Editor() {
                   items={droppedItems}
                   // We now pass pathData instead of points for rendering
                   // points is kept empty [] to satisfy type if needed, or we can just ignore it
-                  points={[]} 
+                  points={[]}
                   pathData={connectionPaths[connection.id]}
                   isSelected={connection.id === selectedConnectionId}
                   onSelect={() => {
@@ -536,10 +536,10 @@ export default function Editor() {
             <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-none">
               <div className="px-4 py-2 bg-black/70 backdrop-blur text-white text-sm rounded-full shadow-lg border border-white/10 flex items-center gap-3">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"/>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                   Drawing Connection
                 </span>
-                <div className="w-px h-3 bg-white/20"/>
+                <div className="w-px h-3 bg-white/20" />
                 <span className="text-white/80 text-xs">
                   Click empty space to add corner • Click target point to finish
                 </span>
@@ -550,12 +550,12 @@ export default function Editor() {
           {/* Selection Guidance Overlay */}
           {!isDrawingConnection && (selectedItemId !== null || selectedConnectionId !== null) && (
             <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-none">
-               <div className="px-4 py-2 bg-black/70 backdrop-blur text-white text-sm rounded-full shadow-lg border border-white/10 flex items-center gap-3">
+              <div className="px-4 py-2 bg-black/70 backdrop-blur text-white text-sm rounded-full shadow-lg border border-white/10 flex items-center gap-3">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400"/>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
                   Selection Active
                 </span>
-                <div className="w-px h-3 bg-white/20"/>
+                <div className="w-px h-3 bg-white/20" />
                 <span className="text-white/80 text-xs">
                   Press 'Del', 'Backspace' or 'D' to delete selection
                 </span>
