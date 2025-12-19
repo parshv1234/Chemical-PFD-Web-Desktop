@@ -2,39 +2,61 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Stage, Layer, Line } from "react-konva";
 import Konva from "konva";
-import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip } from "@heroui/react";
+import {
+  Button,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Tooltip,
+} from "@heroui/react";
+import {
+  TbLayoutSidebarRightExpand,
+  TbLayoutSidebarRightCollapse,
+  TbLayoutSidebarLeftCollapse,
+  TbLayoutSidebarLeftExpand,
+} from "react-icons/tb";
+import { MdZoomIn, MdZoomOut, MdCenterFocusWeak } from "react-icons/md";
+import { FiDownload } from "react-icons/fi";
+
 import { ThemeSwitch } from "@/components/theme-switch";
 import { CanvasItemImage } from "@/components/Canvas/CanvasItemImage";
 import { ConnectionLine } from "@/components/Canvas/ConnectionLine";
-import { ComponentLibrarySidebar, CanvasPropertiesSidebar } from "@/components/Canvas/ComponentLibrarySidebar";
+import {
+  ComponentLibrarySidebar,
+  CanvasPropertiesSidebar,
+} from "@/components/Canvas/ComponentLibrarySidebar";
 import { calculateManualPathsWithBridges } from "@/utils/routing";
 import { useHistory } from "@/hooks/useHistory";
 import { useComponents } from "@/context/ComponentContext";
-import { TbLayoutSidebarRightExpand, TbLayoutSidebarRightCollapse, TbLayoutSidebarLeftCollapse, TbLayoutSidebarLeftExpand } from "react-icons/tb";
-import { MdZoomIn, MdZoomOut, MdCenterFocusWeak } from "react-icons/md";
-import ExportModal from '@/components/Canvas/ExportModal';
-import { useExport } from '@/hooks/useExport';
-import { ExportOptions } from '@/components/Canvas/types';
-import { FiDownload } from 'react-icons/fi'; 
-import { useEditorStore, type ComponentItem, type CanvasItem, type Connection, type CanvasState } from "@/store/useEditorStore";
+import ExportModal from "@/components/Canvas/ExportModal";
+import { useExport } from "@/hooks/useExport";
+import { ExportOptions } from "@/components/Canvas/types";
+import {
+  useEditorStore,
+  type ComponentItem,
+  type CanvasItem,
+  type CanvasState,
+} from "@/store/useEditorStore";
 
- 
 export default function Editor() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
 
-
   // Export diagram states
   const editorStore = useEditorStore();
+
   useEffect(() => {
     if (projectId) {
       // Load saved state from localStorage or API (optional)
       const savedState = localStorage.getItem(`editor-${projectId}`);
+
       if (savedState) {
         try {
           const parsedState = JSON.parse(savedState);
+
           editorStore.hydrateEditor(projectId, parsedState);
         } catch (e) {
           console.error("Failed to load saved state:", e);
@@ -44,7 +66,7 @@ export default function Editor() {
         editorStore.initEditor(projectId);
       }
     }
-    
+
     // Cleanup on unmount
     return () => {
       if (projectId) {
@@ -59,7 +81,7 @@ export default function Editor() {
   const currentState = projectId ? editorStore.getEditorState(projectId) : null;
   const droppedItems = currentState?.items || [];
   const connections = currentState?.connections || [];
-  
+
   const [showExportModal, setShowExportModal] = useState(false);
   const { exportDiagram, isExporting, exportError } = useExport();
   const handleExport = async (options: ExportOptions) => {
@@ -67,25 +89,25 @@ export default function Editor() {
     setShowExportModal(false);
 
     if (!exportError) {
-      alert('Export successful!');
+      alert("Export successful!");
     }
   };
-
 
   // --- State ---
   const { components } = useComponents();
   const handleZoomIn = () => {
-    setStageScale(prev => Math.min(3, prev + 0.1)); // Max 300%, increment 10%
+    setStageScale((prev) => Math.min(3, prev + 0.1)); // Max 300%, increment 10%
   };
 
   const handleZoomOut = () => {
-    setStageScale(prev => Math.max(0.1, prev - 0.1)); // Min 10%, decrement 10%
+    setStageScale((prev) => Math.max(0.1, prev - 0.1)); // Min 10%, decrement 10%
   };
   const handleCenterToContent = () => {
     if (droppedItems.length === 0) {
       // If no items, reset view
       setStagePos({ x: 0, y: 0 });
       setStageScale(1);
+
       return;
     }
 
@@ -95,7 +117,7 @@ export default function Editor() {
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    droppedItems.forEach(item => {
+    droppedItems.forEach((item) => {
       minX = Math.min(minX, item.x);
       minY = Math.min(minY, item.y);
       maxX = Math.max(maxX, item.x + item.width);
@@ -120,8 +142,8 @@ export default function Editor() {
       const centerX = minX - padding + contentWidth / 2;
       const centerY = minY - padding + contentHeight / 2;
 
-      const targetX = (containerWidth / 2) - (centerX * scale);
-      const targetY = (containerHeight / 2) - (centerY * scale);
+      const targetX = containerWidth / 2 - centerX * scale;
+      const targetY = containerHeight / 2 - centerY * scale;
 
       // Animate to position
       setStageScale(scale);
@@ -135,12 +157,12 @@ export default function Editor() {
     undo,
     redo,
     canUndo,
-    canRedo
+    canRedo,
   } = useHistory<CanvasState>({
     items: [],
     connections: [],
     counts: {},
-    sequenceCounter: 0
+    sequenceCounter: 0,
   });
 
   // Sync store with history
@@ -157,7 +179,9 @@ export default function Editor() {
 
   // Connection State
   // const [connections, setConnections] = useState<Connection[]>([]); // Replaced by history state
-  const [selectedConnectionId, setSelectedConnectionId] = useState<number | null>(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<
+    number | null
+  >(null);
   const [isDrawingConnection, setIsDrawingConnection] = useState(false);
   const [tempConnection, setTempConnection] = useState<{
     sourceItemId: number;
@@ -168,7 +192,10 @@ export default function Editor() {
     currentX: number;
     currentY: number;
   } | null>(null);
-  const [hoveredGrip, setHoveredGrip] = useState<{ itemId: number; gripIndex: number } | null>(null);
+  const [hoveredGrip, setHoveredGrip] = useState<{
+    itemId: number;
+    gripIndex: number;
+  } | null>(null);
   // Canvas Viewport State
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
@@ -187,38 +214,42 @@ export default function Editor() {
   }, []);
   */
 
-
   // --- Helpers ---
-
 
   // Precompute final polylines with small "bridge" bumps where
   // manually drawn lines cross.
-   const connectionPaths = useMemo(
+  const connectionPaths = useMemo(
     () => calculateManualPathsWithBridges(connections, droppedItems),
-    [connections, droppedItems]
+    [connections, droppedItems],
   );
 
   // --- Event Listeners ---
 
   // Handle keyboard events (Delete key)
-    useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
         undo();
+
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
         e.preventDefault();
         redo();
+
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
         e.preventDefault();
         handleCenterToContent();
       }
 
-      if (e.key === 'Delete' || e.key === 'Backspace' || e.key.toLowerCase() === 'd') {
+      if (
+        e.key === "Delete" ||
+        e.key === "Backspace" ||
+        e.key.toLowerCase() === "d"
+      ) {
         if (selectedConnectionId !== null && projectId) {
           editorStore.removeConnection(projectId, selectedConnectionId);
           setSelectedConnectionId(null);
@@ -229,9 +260,17 @@ export default function Editor() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedConnectionId, selectedItemId, undo, redo, projectId, editorStore]);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    selectedConnectionId,
+    selectedItemId,
+    undo,
+    redo,
+    projectId,
+    editorStore,
+  ]);
 
   // --- Handlers ---
   const handleDragStart = (e: React.DragEvent, item: ComponentItem) => {
@@ -240,13 +279,16 @@ export default function Editor() {
     // Set drag image (ghost)
     if (item.svg) {
       const img = new Image();
+
       img.src = item.svg;
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
+
       canvas.width = 80;
       canvas.height = 80;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
+
       if (ctx) {
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, 80, 80);
         img.onload = () => {
           ctx.drawImage(img, 0, 0, 80, 80);
@@ -268,7 +310,8 @@ export default function Editor() {
         const droppedItem = dragItemRef.current;
 
         const img = new Image();
-        img.src = droppedItem.svg || droppedItem.icon || '';
+
+        img.src = droppedItem.svg || droppedItem.icon || "";
 
         img.onload = () => {
           const aspectRatio = img.width / img.height;
@@ -287,7 +330,7 @@ export default function Editor() {
             y: pointer.y - height / 2,
             width,
             height,
-            rotation: 0
+            rotation: 0,
           });
 
           setSelectedItemId(newItem.id);
@@ -299,7 +342,7 @@ export default function Editor() {
             y: pointer.y - 40,
             width: 80,
             height: 80,
-            rotation: 0
+            rotation: 0,
           });
 
           setSelectedItemId(newItem.id);
@@ -312,6 +355,7 @@ export default function Editor() {
   const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const stage = stageRef.current;
+
     if (!stage) return;
 
     if (e.evt.ctrlKey) {
@@ -327,7 +371,8 @@ export default function Editor() {
         y: (pointer.y - stage.y()) / oldScale,
       };
 
-      const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+      const newScale =
+        e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
 
       setStageScale(newScale);
       setStagePos({
@@ -336,9 +381,9 @@ export default function Editor() {
       });
     } else {
       // Pan logic
-      setStagePos(prev => ({
+      setStagePos((prev) => ({
         x: prev.x - e.evt.deltaX,
-        y: prev.y - e.evt.deltaY
+        y: prev.y - e.evt.deltaY,
       }));
     }
   };
@@ -356,6 +401,7 @@ export default function Editor() {
     if (projectId) {
       // Transform Canvas types to store types if needed
       const storeUpdates: Partial<CanvasItem> = {};
+
       Object.entries(updates).forEach(([key, value]) => {
         (storeUpdates as any)[key] = value;
       });
@@ -373,13 +419,19 @@ export default function Editor() {
 
   // --- Connection Handlers ---
 
-    const handleGripMouseDown = (itemId: number, gripIndex: number, x: number, y: number) => {
+  const handleGripMouseDown = (
+    itemId: number,
+    gripIndex: number,
+    x: number,
+    y: number,
+  ) => {
     if (!projectId) return;
 
     if (
       isDrawingConnection &&
       tempConnection &&
-      (tempConnection.sourceItemId !== itemId || tempConnection.sourceGripIndex !== gripIndex)
+      (tempConnection.sourceItemId !== itemId ||
+        tempConnection.sourceGripIndex !== gripIndex)
     ) {
       const newConnection = editorStore.addConnection(projectId, {
         sourceItemId: tempConnection.sourceItemId,
@@ -392,6 +444,7 @@ export default function Editor() {
       setIsDrawingConnection(false);
       setTempConnection(null);
       setSelectedConnectionId(newConnection.id);
+
       return;
     }
 
@@ -407,7 +460,6 @@ export default function Editor() {
     });
   };
 
-
   const handleGripMouseEnter = (itemId: number, gripIndex: number) => {
     setHoveredGrip({ itemId, gripIndex });
   };
@@ -419,14 +471,20 @@ export default function Editor() {
   const handleStageMouseMove = () => {
     if (isDrawingConnection && tempConnection) {
       const stage = stageRef.current;
+
       if (stage) {
         const pointer = stage.getRelativePointerPosition();
+
         if (pointer) {
-          setTempConnection(prev => prev ? {
-            ...prev,
-            currentX: pointer.x,
-            currentY: pointer.y,
-          } : null);
+          setTempConnection((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  currentX: pointer.x,
+                  currentY: pointer.y,
+                }
+              : null,
+          );
         }
       }
     }
@@ -441,8 +499,9 @@ export default function Editor() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const resizeObserver = new ResizeObserver(entries => {
+    const resizeObserver = new ResizeObserver((entries) => {
       const rect = entries[0].contentRect;
+
       setStageSize({
         width: rect.width,
         height: rect.height,
@@ -450,9 +509,9 @@ export default function Editor() {
     });
 
     resizeObserver.observe(containerRef.current);
+
     return () => resizeObserver.disconnect();
   }, []);
-
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -462,15 +521,23 @@ export default function Editor() {
           <Tooltip content="Back to Dashboard">
             <Button
               isIconOnly
+              className="text-gray-700 dark:text-gray-300"
               variant="light"
               onPress={() => navigate("/dashboard")}
-              className="text-gray-700 dark:text-gray-300"
-            >←</Button>
+            >
+              ←
+            </Button>
           </Tooltip>
           <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-2" />
           <Dropdown>
             <DropdownTrigger>
-              <Button variant="light" size="sm" className="text-gray-700 dark:text-gray-300">File</Button>
+              <Button
+                className="text-gray-700 dark:text-gray-300"
+                size="sm"
+                variant="light"
+              >
+                File
+              </Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="File Actions">
               <DropdownItem key="new">New Diagram</DropdownItem>
@@ -481,12 +548,34 @@ export default function Editor() {
 
           <Dropdown>
             <DropdownTrigger>
-              <Button variant="light" size="sm" className="text-gray-700 dark:text-gray-300">Edit</Button>
+              <Button
+                className="text-gray-700 dark:text-gray-300"
+                size="sm"
+                variant="light"
+              >
+                Edit
+              </Button>
             </DropdownTrigger>
-            <DropdownMenu aria-label="Edit Actions" disabledKeys={[!canUndo && 'undo', !canRedo && 'redo'].filter(Boolean) as string[]}>
-              <DropdownItem key="undo" onPress={undo}>Undo (Ctrl+Z)</DropdownItem>
-              <DropdownItem key="redo" onPress={redo}>Redo (Ctrl+Y)</DropdownItem>
-              <DropdownItem key="delete" onPress={() => selectedItemId && handleDeleteItem(selectedItemId)}>
+            <DropdownMenu
+              aria-label="Edit Actions"
+              disabledKeys={
+                [!canUndo && "undo", !canRedo && "redo"].filter(
+                  Boolean,
+                ) as string[]
+              }
+            >
+              <DropdownItem key="undo" onPress={undo}>
+                Undo (Ctrl+Z)
+              </DropdownItem>
+              <DropdownItem key="redo" onPress={redo}>
+                Redo (Ctrl+Y)
+              </DropdownItem>
+              <DropdownItem
+                key="delete"
+                onPress={() =>
+                  selectedItemId && handleDeleteItem(selectedItemId)
+                }
+              >
                 Delete Selected (Del)
               </DropdownItem>
               <DropdownItem key="clear" onPress={handleClearSelection}>
@@ -497,7 +586,13 @@ export default function Editor() {
 
           <Dropdown>
             <DropdownTrigger>
-              <Button variant="light" size="sm" className="text-gray-700 dark:text-gray-300">View</Button>
+              <Button
+                className="text-gray-700 dark:text-gray-300"
+                size="sm"
+                variant="light"
+              >
+                View
+              </Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="View Actions">
               <DropdownItem key="zoom-in">Zoom In (+)</DropdownItem>
@@ -509,30 +604,38 @@ export default function Editor() {
         </div>
 
         <div className="font-semibold text-gray-800 dark:text-gray-200">
-          Diagram Editor <span className="text-xs ml-2 text-gray-600 dark:text-gray-400">ID: {projectId}</span>
+          Diagram Editor{" "}
+          <span className="text-xs ml-2 text-gray-600 dark:text-gray-400">
+            ID: {projectId}
+          </span>
         </div>
 
         <div className="flex gap-2">
           <ThemeSwitch />
           <Button
-            size="sm"
-            variant="bordered"
             className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-            onPress={() => setShowExportModal(true)}
+            size="sm"
             startContent={<FiDownload />}
+            variant="bordered"
+            onPress={() => setShowExportModal(true)}
           >
             Export
           </Button>
           <Button
-            size="sm"
-            variant="bordered"
             className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-            onPress={() => setShowExportModal(true)}
+            size="sm"
             startContent={<FiDownload />}
+            variant="bordered"
+            onPress={() => setShowExportModal(true)}
           >
             Generate Report
           </Button>
-          <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
+          <Button
+            className="bg-blue-600 text-white hover:bg-blue-700"
+            size="sm"
+          >
+            Save Changes
+          </Button>
         </div>
       </div>
 
@@ -549,81 +652,90 @@ export default function Editor() {
       >
         {/* Left Sidebar - Component Library */}
         <div className="relative overflow-hidden border-r border-gray-200 dark:border-gray-800">
-
           {/* Collapse Button */}
           <button
-            onClick={() => setLeftCollapsed(v => !v)}
             className="absolute top-2 right-2 z-10 w-7 h-7 flex items-center justify-center
             rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
             hover:bg-gray-100 dark:hover:bg-gray-700"
             title={leftCollapsed ? "Expand" : "Collapse"}
+            onClick={() => setLeftCollapsed((v) => !v)}
           >
-            {!leftCollapsed ? <TbLayoutSidebarLeftCollapse />
-              : <TbLayoutSidebarLeftExpand />
-            }
+            {!leftCollapsed ? (
+              <TbLayoutSidebarLeftCollapse />
+            ) : (
+              <TbLayoutSidebarLeftExpand />
+            )}
           </button>
 
           {!leftCollapsed && (
             <ComponentLibrarySidebar
               components={components}
+              initialSearchQuery={searchQuery}
               onDragStart={handleDragStart}
               onSearch={setSearchQuery}
-              initialSearchQuery={searchQuery}
             />
           )}
-
         </div>
-
-
 
         {/* Canvas Area - Konva */}
         <div
           ref={containerRef}
           className="relative min-w-0 overflow-hidden bg-white"
-          onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
         >
           {/* CSS Grid Background */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)',
+              backgroundImage: "radial-gradient(#9ca3af 1px, transparent 1px)",
               backgroundSize: `${20 * stageScale}px ${20 * stageScale}px`,
               backgroundPosition: `${stagePos.x}px ${stagePos.y}px`,
-              opacity: 0.3
+              opacity: 0.3,
             }}
           />
 
           <Stage
-            width={stageSize.width}
+            ref={stageRef}
+            draggable
+            className="flex relative"
             height={stageSize.height}
             scaleX={stageScale}
             scaleY={stageScale}
+            width={stageSize.width}
             x={stagePos.x}
             y={stagePos.y}
-            draggable
-            onWheel={handleWheel}
-            ref={stageRef}
-            className="flex relative"
+            onDragEnd={(e) => {
+              // Update stage position state when panning finishes
+              if (e.target === stageRef.current) {
+                setStagePos({ x: e.target.x(), y: e.target.y() });
+              }
+            }}
             onMouseDown={(e) => {
               const clickedOnEmpty = e.target === e.target.getStage();
 
               // While drawing a connection, clicking on empty canvas creates a waypoint
               if (clickedOnEmpty && isDrawingConnection && tempConnection) {
                 const stage = stageRef.current;
+
                 if (stage) {
                   const pointer = stage.getRelativePointerPosition();
+
                   if (pointer) {
-                    setTempConnection(prev =>
+                    setTempConnection((prev) =>
                       prev
                         ? {
-                          ...prev,
-                          waypoints: [...prev.waypoints, { x: pointer.x, y: pointer.y }],
-                        }
-                        : prev
+                            ...prev,
+                            waypoints: [
+                              ...prev.waypoints,
+                              { x: pointer.x, y: pointer.y },
+                            ],
+                          }
+                        : prev,
                     );
                   }
                 }
+
                 return;
               }
 
@@ -635,19 +747,20 @@ export default function Editor() {
             }}
             onMouseMove={() => {
               const stage = stageRef.current;
+
               if (stage) {
                 const pointer = stage.getRelativePointerPosition();
-                if (pointer) setCursorPos({ x: Math.round(pointer.x), y: Math.round(pointer.y) });
+
+                if (pointer)
+                  setCursorPos({
+                    x: Math.round(pointer.x),
+                    y: Math.round(pointer.y),
+                  });
               }
               handleStageMouseMove();
             }}
             onMouseUp={handleStageMouseUp}
-            onDragEnd={(e) => {
-              // Update stage position state when panning finishes
-              if (e.target === stageRef.current) {
-                setStagePos({ x: e.target.x(), y: e.target.y() });
-              }
-            }}
+            onWheel={handleWheel}
           >
             <Layer>
               {/* Render Connections */}
@@ -658,9 +771,9 @@ export default function Editor() {
                   items={droppedItems}
                   // We now pass pathData instead of points for rendering
                   // points is kept empty [] to satisfy type if needed, or we can just ignore it
-                  points={[]}
-                  pathData={connectionPaths[connection.id]}
                   isSelected={connection.id === selectedConnectionId}
+                  pathData={connectionPaths[connection.id]}
+                  points={[]}
                   onSelect={() => {
                     setSelectedConnectionId(connection.id);
                     setSelectedItemId(null);
@@ -671,6 +784,8 @@ export default function Editor() {
               {/* Render Temporary Connection Line (Drawing) */}
               {tempConnection && (
                 <Line
+                  dash={[10, 5]}
+                  listening={false}
                   points={[
                     tempConnection.startX,
                     tempConnection.startY,
@@ -680,8 +795,6 @@ export default function Editor() {
                   ]}
                   stroke="#9ca3af"
                   strokeWidth={2}
-                  dash={[10, 5]}
-                  listening={false}
                 />
               )}
 
@@ -689,15 +802,17 @@ export default function Editor() {
               {droppedItems.map((item) => (
                 <CanvasItemImage
                   key={item.id}
-                  item={item}
+                  hoveredGrip={hoveredGrip}
+                  isDrawingConnection={isDrawingConnection}
                   isSelected={item.id === selectedItemId}
-                  onSelect={() => handleSelectItem(item.id)}
-                  onChange={(newAttrs) => handleUpdateItem(newAttrs.id, newAttrs)}
+                  item={item}
+                  onChange={(newAttrs) =>
+                    handleUpdateItem(newAttrs.id, newAttrs)
+                  }
                   onGripMouseDown={handleGripMouseDown}
                   onGripMouseEnter={handleGripMouseEnter}
                   onGripMouseLeave={handleGripMouseLeave}
-                  isDrawingConnection={isDrawingConnection}
-                  hoveredGrip={hoveredGrip}
+                  onSelect={() => handleSelectItem(item.id)}
                 />
               ))}
             </Layer>
@@ -710,27 +825,26 @@ export default function Editor() {
               <div className="flex gap-2 dark:text-gray-200">
                 <span className="font-bold text-gray-400">X</span> {cursorPos.x}
               </div>
-              <div className="w-px h-3 bg-gray-400"></div>
+              <div className="w-px h-3 bg-gray-400" />
               <div className="flex gap-2 dark:text-gray-200">
                 <span className="font-bold text-gray-400">Y</span> {cursorPos.y}
               </div>
 
-
-              <div className="w-px h-3 bg-gray-300"></div>
+              <div className="w-px h-3 bg-gray-300" />
 
               {/* Zoom Controls */}
               <div className="flex items-center gap-2">
                 {/* Zoom Out Button */}
                 <button
-                  onClick={handleZoomOut}
-                  disabled={stageScale <= 0.1}
                   className="w-8 h-8 flex items-center justify-center rounded-full
                 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700
                 border border-gray-300 dark:border-gray-600
                 shadow-sm hover:shadow
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-all duration-200"
+                  disabled={stageScale <= 0.1}
                   title="Zoom Out"
+                  onClick={handleZoomOut}
                 >
                   <MdZoomOut className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </button>
@@ -738,41 +852,42 @@ export default function Editor() {
                 {/* Zoom Percentage Display & Reset */}
                 <div className="flex items-center">
                   {/* Percentage Display */}
-                  <div className="px-3 py-1.5 text-sm font-medium
+                  <div
+                    className="px-3 py-1.5 text-sm font-medium
                 bg-gray-50 dark:bg-gray-800 
                 rounded-l-md
-                text-gray-700 dark:text-gray-300">
+                text-gray-700 dark:text-gray-300"
+                  >
                     {Math.round(stageScale * 100)}%
                   </div>
 
                   {/* Reset Button */}
-
                 </div>
                 <button
-                  onClick={handleCenterToContent}
-                  disabled={droppedItems.length === 0}
                   className="w-8 h-8 flex items-center justify-center rounded-full
                 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700
                 border border-gray-300 dark:border-gray-600
                 shadow-sm hover:shadow
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-all duration-200"
+                  disabled={droppedItems.length === 0}
                   title="Center to Content"
+                  onClick={handleCenterToContent}
                 >
                   <MdCenterFocusWeak className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </button>
 
                 {/* Zoom In Button */}
                 <button
-                  onClick={handleZoomIn}
-                  disabled={stageScale >= 3}
                   className="w-8 h-8 flex items-center justify-center rounded-full
                 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700
                 border border-gray-300 dark:border-gray-600
                 shadow-sm hover:shadow
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-all duration-200"
+                  disabled={stageScale >= 3}
                   title="Zoom In"
+                  onClick={handleZoomIn}
                 >
                   <MdZoomIn className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </button>
@@ -796,27 +911,30 @@ export default function Editor() {
           )}
 
           {/* Selection Guidance Overlay */}
-          {!isDrawingConnection && (selectedItemId !== null || selectedConnectionId !== null) && (
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-none">
-              <div className="px-4 py-2 bg-black/70 backdrop-blur text-white text-sm rounded-full shadow-lg border border-white/10 flex items-center gap-3">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                  Selection Active
-                </span>
-                <div className="w-px h-3 bg-white/20" />
-                <span className="text-white/80 text-xs">
-                  Press 'Del', 'Backspace' or 'D' to delete selection
-                </span>
+          {!isDrawingConnection &&
+            (selectedItemId !== null || selectedConnectionId !== null) && (
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-none">
+                <div className="px-4 py-2 bg-black/70 backdrop-blur text-white text-sm rounded-full shadow-lg border border-white/10 flex items-center gap-3">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    Selection Active
+                  </span>
+                  <div className="w-px h-3 bg-white/20" />
+                  <span className="text-white/80 text-xs">
+                    Press 'Del', 'Backspace' or 'D' to delete selection
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Empty State Overlay */}
           {droppedItems.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center p-6 bg-white/80 backdrop-blur rounded-xl border border-gray-200 shadow-sm">
                 <div className="text-gray-500 font-medium">Canvas Empty</div>
-                <div className="text-xs text-gray-400 mt-1">Drag components from the sidebar</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Drag components from the sidebar
+                </div>
               </div>
             </div>
           )}
@@ -824,35 +942,37 @@ export default function Editor() {
         {/* Right Sidebar - Canvas Properties/Items List */}
 
         <div className="relative overflow-hidden border-l border-gray-200 dark:border-gray-800 hidden lg:block">
-
           {/* Collapse Button */}
           <button
-            onClick={() => setRightCollapsed(v => !v)}
             className="absolute top-2 left-2 z-10 w-7 h-7 flex items-center justify-center
       rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
       hover:bg-gray-100 dark:hover:bg-gray-700"
             title={rightCollapsed ? "Expand" : "Collapse"}
+            onClick={() => setRightCollapsed((v) => !v)}
           >
-            {!rightCollapsed ? <TbLayoutSidebarRightCollapse />
-              : <TbLayoutSidebarRightExpand />}
+            {!rightCollapsed ? (
+              <TbLayoutSidebarRightCollapse />
+            ) : (
+              <TbLayoutSidebarRightExpand />
+            )}
           </button>
 
           {!rightCollapsed && (
             <CanvasPropertiesSidebar
+              showAllItemsByDefault
               items={droppedItems}
               selectedItemId={selectedItemId || undefined}
-              onSelectItem={handleSelectItem}
               onDeleteItem={handleDeleteItem}
+              onSelectItem={handleSelectItem}
               onUpdateItem={handleUpdateItem}
-              showAllItemsByDefault
             />
           )}
         </div>
         <ExportModal
+          isExporting={isExporting}
           isOpen={showExportModal}
           onClose={() => setShowExportModal(false)}
           onExport={handleExport}
-          isExporting={isExporting}
         />
       </div>
     </div>
