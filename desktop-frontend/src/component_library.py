@@ -6,7 +6,7 @@ from src import api_client
 from PyQt5.QtCore import Qt, QMimeData, QSize
 from PyQt5.QtGui import QIcon, QDrag
 from PyQt5.QtWidgets import (
-    QDockWidget, QWidget, QVBoxLayout, QLineEdit, 
+    QWidget, QVBoxLayout, QLineEdit, 
     QScrollArea, QLabel, QToolButton, QGridLayout
 )
 
@@ -61,18 +61,10 @@ class ComponentButton(QToolButton):
         drag.exec_(Qt.CopyAction)
 
 
-class ComponentLibrary(QDockWidget):
+class ComponentLibrary(QWidget):
     def __init__(self, parent=None):
-        super(ComponentLibrary, self).__init__("Components", parent)
+        super(ComponentLibrary, self).__init__(parent)
         
-        self.setFeatures(
-            QDockWidget.DockWidgetFloatable |
-            QDockWidget.DockWidgetMovable |
-            QDockWidget.DockWidgetClosable
-        )
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-
-        # 🔥 reduce width so canvas gets more space
         self.setMinimumWidth(260)
         self.setMaximumWidth(260)
         
@@ -85,12 +77,15 @@ class ComponentLibrary(QDockWidget):
         self._load_components()
         self._populate_icons()
     
-
     def _setup_ui(self):
-        main_widget = QWidget()
-        main_layout = QVBoxLayout(main_widget)
+        main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(5, 5, 5, 5)
         main_layout.setSpacing(5)
+        
+        title = QLabel("Components")
+        title.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin-bottom: 5px;")
+        title.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title)
         
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("Search components...")
@@ -109,9 +104,6 @@ class ComponentLibrary(QDockWidget):
         self.scroll_area.setWidget(self.scroll_widget)
         main_layout.addWidget(self.scroll_area)
         
-        self.setWidget(main_widget)
-
-
     def _load_components(self):
         csv_path = os.path.join("ui", "assets", "Component_Details.csv")
         

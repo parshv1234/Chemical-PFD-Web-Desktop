@@ -4,7 +4,6 @@ from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtCore import Qt, QRectF, QPoint
 from PyQt5.QtGui import QPainter, QColor, QPen
 
-
 class ComponentWidget(QWidget):
     def __init__(self, svg_path, parent=None, config=None):
         super().__init__(parent)
@@ -22,19 +21,17 @@ class ComponentWidget(QWidget):
         self.setAttribute(Qt.WA_Hover, True)
         self.setMouseTracking(True)
 
-    # RECT CALCULATION
     def get_content_rect(self):
         bottom_pad = 25 if self.config.get('default_label') else 10
         w = max(1, self.width() - 20)
         h = max(1, self.height() - 10 - bottom_pad)
         return QRectF(10, 10, w, h)
 
-    # PAINT EVENT
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # SELECTION BORDER
+        # Selection Border
         if self.is_selected:
             painter.setPen(QPen(QColor("#60a5fa"), 2))
             painter.setBrush(Qt.NoBrush)
@@ -42,16 +39,16 @@ class ComponentWidget(QWidget):
 
         content_rect = self.get_content_rect()
 
-        # DRAW SVG
+        # Render SVG
         self.renderer.render(painter, content_rect)
 
-        # LABEL
+        # Label
         if self.config.get('default_label'):
             painter.setPen(QPen(Qt.black))
             text_rect = QRectF(0, content_rect.bottom() + 2, self.width(), 20)
             painter.drawText(text_rect, Qt.AlignCenter, self.config['default_label'])
 
-        # PORTS
+        # Draw Ports
         grips = self.config.get('grips')
         if not grips:
             grips = [
@@ -62,7 +59,6 @@ class ComponentWidget(QWidget):
         for idx, grip in enumerate(grips):
             self.draw_dynamic_port(painter, grip, idx, content_rect)
 
-    # DRAW PORT
     def draw_dynamic_port(self, painter, grip, idx, content_rect):
         cx = content_rect.x() + (grip["x"] / 100.0) * content_rect.width()
         cy = content_rect.y() + (grip["y"] / 100.0) * content_rect.height()
@@ -75,14 +71,11 @@ class ComponentWidget(QWidget):
         painter.setPen(Qt.NoPen)
         painter.drawEllipse(center, radius, radius)
 
-    # GET GRIP POINT POSITION
     def get_grip_position(self, idx):
-        grips = self.config.get('grips')
-        if not grips:
-            grips = [
-                {"x": 0, "y": 50, "side": "left"},
-                {"x": 100, "y": 50, "side": "right"},
-            ]
+        grips = self.config.get('grips') or [
+            {"x": 0, "y": 50, "side": "left"},
+            {"x": 100, "y": 50, "side": "right"},
+        ]
 
         if 0 <= idx < len(grips):
             grip = grips[idx]
@@ -182,12 +175,36 @@ class ComponentWidget(QWidget):
                 # move all selected
                 for comp in parent.components:
                     if comp.is_selected:
-                        comp.move(comp.pos() + delta)
+                        # Calculate new pos
+                        new_pos = comp.pos() + delta
+                        
+                        # Boundary checks
+                        pw = parent.width()
+                        ph = parent.height()
+                        cw = comp.width()
+                        ch = comp.height()
+                        
+                        # Clamp X and Y
+                        nx = max(0, min(new_pos.x(), pw - cw))
+                        ny = max(0, min(new_pos.y(), ph - ch))
+                        
+                        # Apply new position
+                        comp.move(nx, ny)
+                        
                 parent.update()
             else:
-                self.move(self.pos() + delta)
+                new_pos = self.pos() + delta
+                
+                # Boundary Check for single item (if unrelated parent)
                 if parent:
+                    pw = parent.width()
+                    ph = parent.height()
+                    nx = max(0, min(new_pos.x(), pw - self.width()))
+                    ny = max(0, min(new_pos.y(), ph - self.height()))
+                    self.move(nx, ny)
                     parent.update()
+                else:
+                    self.move(new_pos)
 
             self.drag_start_global = curr_global
 
