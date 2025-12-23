@@ -19,6 +19,11 @@ import {
 } from "react-icons/tb";
 import { MdZoomIn, MdZoomOut, MdCenterFocusWeak } from "react-icons/md";
 import { FiDownload } from "react-icons/fi";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@heroui/react";
 
 import { ThemeSwitch } from "@/components/theme-switch";
 import { CanvasItemImage } from "@/components/Canvas/CanvasItemImage";
@@ -41,6 +46,16 @@ import {
 } from "@/store/useEditorStore";
 import { ExportReportModal } from "@/components/Canvas/ExportReportModal";
 
+type Shortcut = {
+  key: string;
+  label: string;
+  display: string;
+  handler: () => void;
+  requireCtrl?: boolean;
+};
+
+
+
 export default function Editor() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -49,6 +64,9 @@ export default function Editor() {
   const [historyReady, setHistoryReady] = useState(false);
   const [historyInitialState, setHistoryInitialState] =
     useState<CanvasState | null>(null);
+
+
+  const isCtrlOrCmd = (e: KeyboardEvent) => e.ctrlKey || e.metaKey;
 
   // ---------- Build initial state ----------
   const editorStore = useEditorStore();
@@ -205,41 +223,68 @@ export default function Editor() {
 
   // --- Event Listeners ---
 
-  // Handle keyboard events (Delete key)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        undo();
-
-        return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
-        e.preventDefault();
-        redo();
-
-        return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
-        e.preventDefault();
-        handleCenterToContent();
-      }
-
-      if (
-        e.key === "Delete" ||
-        e.key === "Backspace" ||
-        e.key.toLowerCase() === "d"
-      ) {
+  const shortcuts: Shortcut[] = [
+    {
+      key: "z",
+      label: "Undo",
+      display: "Ctrl + Z",
+      requireCtrl: true,
+      handler: undo,
+    },
+    {
+      key: "y",
+      label: "Redo",
+      display: "Ctrl + Y",
+      requireCtrl: true,
+      handler: redo,
+    },
+    {
+      key: "c",
+      label: "Center to Content",
+      display: "Ctrl + C",
+      requireCtrl: true,
+      handler: handleCenterToContent,
+    },
+    {
+      key: "backspace",
+      label: "Delete Selection",
+      display: "Ctrl + Backspace",
+      requireCtrl: true,
+      handler: () => {
         if (selectedConnectionId !== null && projectId) {
           editorStore.removeConnection(projectId, selectedConnectionId);
-
           setSelectedConnectionId(null);
         } else if (selectedItemId !== null && projectId) {
           editorStore.deleteItem(projectId, selectedItemId);
           setSelectedItemId(null);
         }
+      },
+    },
+  ];
+
+  // Handle keyboard events (Delete key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+
+
+      for (const shortcut of shortcuts) {
+        const matchesKey =
+          key === shortcut.key ||
+          (shortcut.key === "delete" &&
+            (key === "delete" || key === "backspace"));
+
+        if (
+          matchesKey &&
+          (!shortcut.requireCtrl || isCtrlOrCmd(e))
+        ) {
+          e.preventDefault();
+          shortcut.handler();
+          return;
+        }
       }
     };
+
 
     window.addEventListener("keydown", handleKeyDown);
 
@@ -253,6 +298,7 @@ export default function Editor() {
     editorStore,
     setCanvasState,
   ]);
+
 
   // --- Handlers ---
   const handleDragStart = (e: React.DragEvent, item: ComponentItem) => {
@@ -914,6 +960,55 @@ export default function Editor() {
               </div>
             </div>
           </div>
+          {/* Canvas Shortcuts Help */}
+          <div className="absolute bottom-6 right-6 z-20">
+            <Popover
+              placement="top-end"
+              offset={8}
+              showArrow
+            >
+              <PopoverTrigger>
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="bordered"
+                  className="rounded-ful bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  ?
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-64">
+                <div className="p-3 space-y-2">
+                  <div className="text-sm font-semibold text-foreground">
+                    Keyboard Shortcuts
+                  </div>
+
+                  <div className="space-y-1">
+                    {shortcuts.map((s) => (
+                      <div
+                        key={s.label}
+                        className="flex justify-between items-center text-xs"
+                      >
+                        <span className="text-foreground/70">
+                          {s.label}
+                        </span>
+                        <span className="font-mono bg-content2 px-2 py-0.5 rounded">
+                          {s.display}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 text-[10px] text-foreground/50">
+                    Ctrl (Windows/Linux) or Cmd (Mac)
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+
           {/* Connection Guidance Overlay */}
           {isDrawingConnection && (
             <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-none">
@@ -941,7 +1036,7 @@ export default function Editor() {
                   </span>
                   <div className="w-px h-3 bg-white/20" />
                   <span className="text-white/80 text-xs">
-                    Press 'Del', 'Backspace' or 'D' to delete selection
+                    Press Ctrl+Backspace to delete selection
                   </span>
                 </div>
               </div>
