@@ -890,7 +890,9 @@ export default function Editor() {
                   connection={connection}
                   isSelected={selectedConnectionIds.has(connection.id)}
                   items={droppedItems}
-                  pathData={connectionPaths[connection.id]}
+                  pathData={connectionPaths[connection.id]?.pathData}
+                  arrowAngle={connectionPaths[connection.id]?.arrowAngle}
+                  targetPosition={connectionPaths[connection.id]?.endPoint}
                   points={[]}
                   onSelect={(e: Konva.KonvaEventObject<MouseEvent>) => {
                     const isCtrl = e?.evt.ctrlKey || e?.evt.metaKey;

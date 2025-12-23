@@ -1,7 +1,7 @@
 // src/components/Canvas/ConnectionLine.tsx
 
 
-import { Path } from "react-konva";
+import { Path, RegularPolygon } from "react-konva";
 import { KonvaEventObject } from "konva/lib/Node";
 import { Connection, CanvasItem } from "./types";
 
@@ -14,6 +14,8 @@ interface ConnectionLineProps {
     items?: CanvasItem[];
     isSelected?: boolean;
     onSelect?: (e: KonvaEventObject<MouseEvent>) => void;
+    arrowAngle?: number;
+    targetPosition?: { x: number, y: number };
     // Removed 'allConnections' since collision is now handled in the parent/utils
 }
 
@@ -23,6 +25,8 @@ export const ConnectionLine = ({
     pathData,
     isSelected = false,
     onSelect,
+    arrowAngle,
+    targetPosition,
 }: ConnectionLineProps & { pathData?: string }) => {
 
     // Safety check
@@ -71,6 +75,19 @@ export const ConnectionLine = ({
                 shadowBlur={isSelected ? 4 : 0}
                 shadowOpacity={0.3}
             />
+
+            {/* 3. ARROW HEAD */}
+            {targetPosition && arrowAngle !== undefined && (
+                <RegularPolygon
+                    sides={3}
+                    radius={6}
+                    x={targetPosition.x}
+                    y={targetPosition.y}
+                    rotation={arrowAngle}
+                    fill={isSelected ? "#3b82f6" : "#64748b"}
+                    listening={false}
+                />
+            )}
         </>
     );
 };
