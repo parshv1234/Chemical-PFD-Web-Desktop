@@ -3,11 +3,11 @@ import csv
 import requests
 import src.app_state as app_state
 from src import api_client
-from PyQt5.QtCore import Qt, QMimeData, QSize
+from PyQt5.QtCore import Qt, QMimeData, QSize, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QIcon, QDrag, QMovie
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLineEdit, 
-    QScrollArea, QLabel, QToolButton, QGridLayout, QLabel, QApplication
+    QScrollArea, QLabel, QToolButton, QGridLayout, QLabel, QApplication, QGraphicsOpacityEffect
 )
 from PyQt5.QtCore import QEvent
 
@@ -21,6 +21,52 @@ class FunctionEvent(QEvent):
     def execute(self):
         self.fn()
 
+class ToastMessage(QLabel):
+    def __init__(self, parent, message):
+        super().__init__(message, parent)
+        self.setStyleSheet("""
+            background-color: rgba(40, 40, 40, 200);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+        """)
+        self.setAlignment(Qt.AlignCenter)
+
+        self.opacity = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.opacity)
+
+        self.anim = QPropertyAnimation(self.opacity, b"opacity")
+        self.anim.setDuration(400)
+        self.anim.setEasingCurve(QEasingCurve.InOutQuad)
+
+    def show_toast(self):
+        # Position bottom-right inside the sidebar
+        x = self.parent().width() - self.width() - 20
+        y = self.parent().height() - self.height() - 20
+        self.setGeometry(x, y, self.width(), self.height())
+        self.raise_()
+
+        # Fade In
+        self.anim.stop()
+        self.opacity.setOpacity(0)
+        self.show()
+
+        self.anim.setStartValue(0)
+        self.anim.setEndValue(1)
+        self.anim.start()
+
+        # Fade Out after 2 seconds
+        QTimer.singleShot(2000, self.fade_out)
+
+    def fade_out(self):
+        self.anim.stop()
+        self.anim.setStartValue(1)
+        self.anim.setEndValue(0)
+        self.anim.start()
+
+        # Hide after fade-out completes
+        QTimer.singleShot(400, self.hide)
 
 class ComponentButton(QToolButton):
     def __init__(self, component_data, icon_path, parent=None):
@@ -30,6 +76,23 @@ class ComponentButton(QToolButton):
         if os.path.exists(icon_path):
             self.setIcon(QIcon(icon_path))
             self.setIconSize(QSize(42, 42))
+
+        # BADGE for added components
+        if component_data.get("is_new"):
+            print(f"[BADGE] Creating NEW badge for: {component_data['name']} (s_no: {component_data.get('s_no')})")
+            badge = QLabel("NEW", self)
+            badge.setStyleSheet("""
+                background-color: #3b82f6;
+                color: white;
+                font-size: 8px;
+                font-weight: bold;
+                padding: 2px 4px;
+                border-radius: 4px;
+            """)
+            badge.move(24, 2)  # top-right corner
+            badge.show()
+            badge.raise_()
+
         
         self.setToolTip(component_data['name'])
         self.setFixedSize(56, 56)
@@ -75,6 +138,7 @@ class ComponentButton(QToolButton):
 class ComponentLibrary(QWidget):
     def __init__(self, parent=None):
         super(ComponentLibrary, self).__init__(parent)
+        self.new_snos = set()  # holds S.No added in last sync
         
         self.setMinimumWidth(260)
         self.setMaximumWidth(260)
@@ -92,7 +156,8 @@ class ComponentLibrary(QWidget):
         self.loader_label = QLabel(self)
         self.loader_label.setAlignment(Qt.AlignCenter)
         self.loader_label.setStyleSheet("background: transparent;")
-        self.loader_movie = QMovie("ui/assets/loading.gif")  # put gif in assets
+        self.loader_movie = QMovie("ui/assets/loading.gif")
+        self.loader_movie.setScaledSize(QSize(64, 64))
         self.loader_label.setMovie(self.loader_movie)
         self.loader_label.setVisible(False)
 
@@ -125,17 +190,16 @@ class ComponentLibrary(QWidget):
         main_layout.addWidget(self.scroll_area)
         
     def _show_loader(self):
-        # Center the loader overlay
-        size = 80  # overlay size
+        size = 80
         self.loader_label.setGeometry(
             (self.width() - size) // 2,
             (self.height() - size) // 2,
             size, size
         )
         self.loader_label.setVisible(True)
+        self.loader_label.setStyleSheet("background-color: rgba(0,0,0,120); border-radius: 6px;")
         self.loader_movie.start()
         self.loader_label.raise_()
-
         QApplication.processEvents()
 
     def _hide_loader(self):
@@ -148,13 +212,21 @@ class ComponentLibrary(QWidget):
         if not os.path.exists(csv_path):
             return
         
+        print(f"[LOAD] new_snos set contains: {self.new_snos}")
+        
         try:
-            with open(csv_path, 'r', encoding='utf-8') as file:
+            with open(csv_path, 'r', encoding='utf-8-sig') as file:
                 reader = csv.DictReader(file)
                 for row in reader:
                     if row['parent'] and row['name']:
+                        s_no = row.get("s_no", "").strip()
+                        is_new = s_no in self.new_snos
+                        
+                        if is_new:
+                            print(f"[LOAD] Found NEW component: {row['name']} with s_no={s_no}")
+                        
                         self.component_data.append({
-                            "s_no": row.get("s_no", "").strip(),
+                            "s_no": s_no,
                             "parent": row.get("parent", "").strip(),
                             "name": row.get("name", "").strip(),
                             "legend": row.get("legend", "").strip(),
@@ -162,7 +234,8 @@ class ComponentLibrary(QWidget):
                             "object": row.get("object", "").strip(),
                             "svg": row.get("svg", "").strip(),
                             "png": row.get("png", "").strip(),
-                            "grips": row.get("grips", "").strip()
+                            "grips": row.get("grips", "").strip(),
+                            "is_new": is_new
                         })
         except Exception as e:
             print(f"Error loading components: {e}")
@@ -190,10 +263,11 @@ class ComponentLibrary(QWidget):
             new_rows = []
 
             for comp in api_components:
-
                 s_no = str(comp.get("s_no", "")).strip()
                 if not s_no or s_no in existing:
                     continue
+
+                print(f"[SYNC] NEW component detected: s_no={s_no}, name={comp.get('name')}")
 
                 parent = comp.get("parent", "").strip()
                 name = comp.get("name", "").strip()
@@ -248,8 +322,12 @@ class ComponentLibrary(QWidget):
                     except Exception as e:
                         print("[SYNC ERROR] SVG failed:", e)
 
+                # Add to new_snos set
+                self.new_snos.add(s_no)
+                print(f"[SYNC] Added s_no={s_no} to new_snos set")
+                
                 # CSV row with exact backend filenames
-                new_rows.append({
+                new_rows.append({   
                     "s_no": s_no,
                     "parent": parent,
                     "name": name,
@@ -277,7 +355,8 @@ class ComponentLibrary(QWidget):
                     for r in new_rows:
                         writer.writerow(r)
 
-                print(f"[SYNC] Added {len(new_rows)} new components.")
+                print(f"[SYNC] Added {len(new_rows)} new components to CSV.")
+                print(f"[SYNC] new_snos now contains: {self.new_snos}")
 
         except Exception as e:
             print("[SYNC CRITICAL ERROR]", e)
@@ -302,17 +381,15 @@ class ComponentLibrary(QWidget):
             unique_key = (parent, name, component.get('object', ''))
             
             if unique_key in seen_components:
-                # If we've seen this exact combination, skip
                 continue
+            
+            seen_components.add(unique_key)
             
             # Additional check: If name is "Filter" in "Fittings", only allow one
             if parent == "Fittings" and name == "Filter":
                 filter_key = ("Fittings", "Filter")
-                if filter_key in seen_components:
+                if any(key[:2] == filter_key for key in seen_components if key != unique_key):
                     continue
-                seen_components.add(filter_key)
-
-            seen_components.add(unique_key)
             
             if parent not in grouped:
                 grouped[parent] = []
@@ -364,7 +441,7 @@ class ComponentLibrary(QWidget):
                     'buttons': category_buttons,
                     'name': parent_name
                 })
-    
+
     def event(self, e):
         if isinstance(e, FunctionEvent):
             e.execute()
@@ -379,14 +456,14 @@ class ComponentLibrary(QWidget):
     }
 
     NAME_CORRECTIONS = {
-        "/": ", ",  # "Reducer/Expander" → "Reducer, Expander"
-        "Furnance": "Furnace",  # Fix CSV typo
-        "Drier": "Dryer",  # British to American spelling
-        "Oil, Gas": "Oil Gas",  # Remove comma from compound name
-        "Centrifugal Pumps": "Centrifugal Pump",  # Singular
-        "Ejector (vapour service)": "Ejector(Vapor Service)",  # Match exact case
-        "Plates, Trays (For mass Transfer)": "Trays or plates",  # Process Vessels  
-        "Separators for Liquids, Decanters": "Separators for Liquids, Decanter"  # Separators
+        "/": ", ",
+        "Furnance": "Furnace",
+        "Drier": "Dryer",
+        "Oil, Gas": "Oil Gas",
+        "Centrifugal Pumps": "Centrifugal Pump",
+        "Ejector (vapour service)": "Ejector(Vapor Service)",
+        "Plates, Trays (For mass Transfer)": "Trays or plates",
+        "Separators for Liquids, Decanters": "Separators for Liquids, Decanter"
     }
 
     PREFIXED_COMPONENTS = {
@@ -395,12 +472,6 @@ class ComponentLibrary(QWidget):
     }
 
     def _get_icon_path(self, parent, name, obj=''):
-        """
-        Returns local PNG path.
-        If missing, auto-downloads from backend/media/components/<file>.
-        """
-
-        # 1) Find the CSV entry for this component
         csv_row = None
         for c in self.component_data:
             if c["parent"] == parent and c["name"] == name:
@@ -409,36 +480,27 @@ class ComponentLibrary(QWidget):
 
         backend_png_filename = csv_row.get("png", "") if csv_row else ""
 
-        # 2) Build local folder path
         folder = self.FOLDER_MAP.get(parent, parent)
         local_dir = os.path.join("ui", "assets", "png", folder)
         os.makedirs(local_dir, exist_ok=True)
 
-        # 3) If backend provided a filename (new components)
         if backend_png_filename:
             local_path = os.path.join(local_dir, backend_png_filename)
 
-            # If already saved locally → use it
             if os.path.exists(local_path):
                 return local_path
 
-            # Else → download automatically
             backend_url = f"{app_state.BACKEND_BASE_URL}/media/components/{backend_png_filename}"
 
             try:
-                print(f"[IMG FETCH] {backend_url}")
                 r = requests.get(backend_url, timeout=5)
                 if r.status_code == 200:
                     with open(local_path, "wb") as f:
                         f.write(r.content)
-                    print(f"[IMG FETCH] Saved → {local_path}")
                     return local_path
-                else:
-                    print("[IMG FETCH ERROR] Failed:", r.status_code)
             except Exception as e:
                 print("[IMG FETCH ERROR]", e)
 
-        # 4) Fallback: use old cleaned-name system (old CSV entries)
         clean_name = obj and self.PREFIXED_COMPONENTS.get(obj)
         if not clean_name:
             clean_name = name
@@ -446,7 +508,6 @@ class ComponentLibrary(QWidget):
                 clean_name = clean_name.replace(old, new)
 
         fallback_path = os.path.join(local_dir, f"{clean_name}.png")
-
         return fallback_path if os.path.exists(fallback_path) else ""
 
     
@@ -477,24 +538,41 @@ class ComponentLibrary(QWidget):
             category['label'].setVisible(has_match)
             category['grid'].setVisible(has_match)
 
+    def _show_update_toast(self):
+        toast = ToastMessage(self, "Components updated from backend")
+        toast.adjustSize()
+        toast.show_toast()
+
     def reload_components(self):
         """
-        Async reload with loading animation
+        Async reload with loading animation.
+        Ensures loader is visible for at least 1 second.
         """
         self._show_loader()
 
+        import time
+        start_time = time.time()
+
         def task():
-            # Background thread work
+            # 1. Background work
             self.component_data.clear()
             self._sync_components_with_backend()
             self._load_components()
 
-            # Update UI on main thread
+            # 2. Ensure minimum loader time (1 second)
+            elapsed = time.time() - start_time
+            min_duration = 1.5
+            if elapsed < min_duration:
+                time.sleep(min_duration - elapsed)
+
+            # 3. Push UI update to main thread
             QApplication.instance().postEvent(
                 self,
                 FunctionEvent(lambda: (
                     self._populate_icons(),
-                    self._hide_loader()
+                    self._hide_loader(),
+                    self._show_update_toast(),
+                    QTimer.singleShot(3000, self.new_snos.clear)
                 ))
             )
 
