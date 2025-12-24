@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QBrush
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMdiArea
+from PyQt5.QtGui import QColor, QBrush, QKeySequence
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMdiArea, QShortcut
 
 from src.canvas.widget import CanvasWidget
 from src.component_library import ComponentLibrary
@@ -38,6 +38,7 @@ class CanvasScreen(QMainWindow):
         main_layout.addWidget(self.mdi_area)
 
         apply_theme_to_screen(self)
+        self._register_shortcuts()
 
     def _connect_menu_signals(self):
         self.menu_manager.new_project_clicked.connect(self.on_new_project)
@@ -72,6 +73,20 @@ class CanvasScreen(QMainWindow):
 
     def on_back_home(self):
         slide_to_index(3, direction=-1)
+
+    def _register_shortcuts(self):
+        """Register cross-platform shortcuts for Add Symbol dialog."""
+
+        # Windows/Linux -> Ctrl + A
+        shortcut_ctrl_a = QShortcut(QKeySequence("Ctrl+A"), self)
+        shortcut_ctrl_a.activated.connect(self.open_add_symbol_dialog)
+
+        # macOS -> Cmd + A  (Meta key = Command key)
+        shortcut_cmd_a = QShortcut(QKeySequence("Meta+A"), self)
+        shortcut_cmd_a.activated.connect(self.open_add_symbol_dialog)
+
+        # print("Shortcut registered: Ctrl+A / Cmd+A -> Add New Symbol")
+
 
     def on_delete_component(self):
         active_sub = self.mdi_area.currentSubWindow()
