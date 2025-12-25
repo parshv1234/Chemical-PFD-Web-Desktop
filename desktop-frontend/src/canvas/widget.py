@@ -9,7 +9,7 @@ from src.connection import Connection
 from src.component_widget import ComponentWidget
 import src.app_state as app_state
 from src.canvas import resources, painter
-from src.canvas.commands import AddCommand, DeleteCommand, MoveCommand
+from src.canvas.commands import AddCommand, DeleteCommand, MoveCommand, AddConnectionCommand
 
 
 
@@ -261,7 +261,10 @@ class CanvasWidget(QWidget):
                     self.active_connection.snap_side
                 )
                 self.active_connection.update_path(self.components, self.connections)
-                self.connections.append(self.active_connection)
+                
+                # Use Undo Command
+                cmd = AddConnectionCommand(self, self.active_connection)
+                self.undo_stack.push(cmd)
             
             self.active_connection = None
             self.update()
