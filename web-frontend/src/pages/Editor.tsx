@@ -1,7 +1,7 @@
 // Editor.tsx (updated - removed localStorage syncing)
-import { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Stage, Layer, Line } from "react-konva";
+import { Stage, Layer, Line, Shape } from "react-konva";
 import Konva from "konva";
 import {
   Button,
@@ -67,9 +67,12 @@ export default function Editor() {
   // State variables related to history were removed as they were unused
 
 
+  // Add this with your other state variables
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [gridSize, setGridSize] = useState(20); // Grid size in pixels (at scale 1)
 
   const isCtrlOrCmd = (e: KeyboardEvent) => e.ctrlKey || e.metaKey;
-
+  
   // ---------- Build initial state ----------
   const editorStore = useEditorStore();
   const initialEditorState = useMemo<CanvasState>(() => {
@@ -108,8 +111,8 @@ export default function Editor() {
   // Export diagram states
   const currentState = projectId ? editorStore.getEditorState(projectId) : null;
   const droppedItems = projectId
-  ? editorStore.getItemsInOrder(projectId)
-  : canvasState?.items || [];
+    ? editorStore.getItemsInOrder(projectId)
+    : canvasState?.items || [];
 
   const connections = canvasState?.connections || [];
 
@@ -136,9 +139,9 @@ export default function Editor() {
   const handleZoomOut = () => {
     setStageScale((prev) => Math.max(0.1, prev - 0.1)); // Min 10%, decrement 10%
   };
-  
+
   const handleToggleGrid = () => {
-  setShowGrid(prev => !prev);
+    setShowGrid(prev => !prev);
   };
 
   const handleCenterToContent = () => {
@@ -254,6 +257,13 @@ export default function Editor() {
       handler: handleToggleGrid,
     },
     {
+      key: "h",
+      label: "Toggle Snap to Grid",
+      display: "Ctrl+h",
+      requireCtrl: true,
+      handler: () => setSnapToGrid(prev => !prev),
+    },
+    {
       key: "y",
       label: "Redo",
       display: "Ctrl + Y",
@@ -286,14 +296,14 @@ export default function Editor() {
         }
       },
     }, {
-    key: "escape",
-    label: "Cancel Drawing",
-    display: "Esc",
-    requireCtrl: false,
-    handler: handleCancelDrawing,
+      key: "escape",
+      label: "Cancel Drawing",
+      display: "Esc",
+      requireCtrl: false,
+      handler: handleCancelDrawing,
     },
   ];
- 
+
   // Handle keyboard events (Delete key)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -362,6 +372,20 @@ export default function Editor() {
       }
     }
   };
+  // Add this helper function after your other handlers
+  // use stage coordinates for snapping — do NOT multiply by stageScale here
+  const snapToGridPosition = (x: number, y: number) => {
+    if (!snapToGrid) return { x, y };
+
+    // gridSize is already in stage coordinates
+    const effectiveGridSize = gridSize;
+
+    return {
+      x: Math.round(x / effectiveGridSize) * effectiveGridSize,
+      y: Math.round(y / effectiveGridSize) * effectiveGridSize,
+    };
+  };
+
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -386,18 +410,26 @@ export default function Editor() {
         img.src = droppedItem.svg || droppedItem.icon || "";
 
         const finalizeAdd = (width: number, height: number) => {
+          // Snap the position to grid
+          let x = pointer.x - width / 2;
+          let y = pointer.y - height / 2;
+
+          if (snapToGrid) {
+            const snapped = snapToGridPosition(x, y);
+            x = snapped.x;
+            y = snapped.y;
+          }
+
           const newItem = editorStore.addItem(projectId!, droppedItem, {
-            x: pointer.x - width / 2,
-            y: pointer.y - height / 2,
+            x,
+            y,
             width,
             height,
             rotation: 0,
           });
 
-
           setSelectedItemIds(new Set([newItem.id]));
         };
-
         img.onload = () => {
           const aspectRatio = img.width / img.height;
           const baseSize = 80;
@@ -470,16 +502,29 @@ export default function Editor() {
   };
 
   const handleUpdateItem = (itemId: number, updates: Partial<CanvasItem>) => {
+    // ---------- LOCAL (no projectId) ----------
     if (!projectId) {
-      // ... (local state update logic omitted for brevity, keeping existing structure if possible but adapting)
-      // For local state only (no project ID), we just simplisticly update.
       setCanvasState((prev) => {
         if (!prev) return prev;
 
+        let patched = { ...updates };
+
+        if (snapToGrid && (updates.x !== undefined || updates.y !== undefined)) {
+          const currentItem = prev.items.find(i => i.id === itemId);
+          if (currentItem) {
+            const x = updates.x ?? currentItem.x;
+            const y = updates.y ?? currentItem.y;
+            const snapped = snapToGridPosition(x, y);
+
+            if (updates.x !== undefined) patched.x = snapped.x;
+            if (updates.y !== undefined) patched.y = snapped.y;
+          }
+        }
+
         return {
           ...prev,
-          items: prev.items.map((it: CanvasItem) =>
-            it.id === itemId ? { ...it, ...updates } : it
+          items: prev.items.map((it) =>
+            it.id === itemId ? { ...it, ...patched } : it
           ),
         };
       });
@@ -487,13 +532,30 @@ export default function Editor() {
       return;
     }
 
-    // Multi-drag logic
-    // If we are moving an item that is part of the selection, move all selected items
-    if (selectedItemIds.has(itemId) && (updates.x !== undefined || updates.y !== undefined)) {
+    // ---------- PROJECT MODE ----------
+    let snappedUpdates: Partial<CanvasItem> = { ...updates };
+
+    if (snapToGrid && (updates.x !== undefined || updates.y !== undefined)) {
       const currentItem = droppedItems.find(i => i.id === itemId);
       if (currentItem) {
-        const deltaX = (updates.x ?? currentItem.x) - currentItem.x;
-        const deltaY = (updates.y ?? currentItem.y) - currentItem.y;
+        const x = updates.x ?? currentItem.x;
+        const y = updates.y ?? currentItem.y;
+        const snapped = snapToGridPosition(x, y);
+
+        if (updates.x !== undefined) snappedUpdates.x = snapped.x;
+        if (updates.y !== undefined) snappedUpdates.y = snapped.y;
+      }
+    }
+
+    // ---------- MULTI-DRAG ----------
+    if (
+      selectedItemIds.has(itemId) &&
+      (snappedUpdates.x !== undefined || snappedUpdates.y !== undefined)
+    ) {
+      const currentItem = droppedItems.find(i => i.id === itemId);
+      if (currentItem) {
+        const deltaX = (snappedUpdates.x ?? currentItem.x) - currentItem.x;
+        const deltaY = (snappedUpdates.y ?? currentItem.y) - currentItem.y;
 
         if (deltaX !== 0 || deltaY !== 0) {
           const batchUpdates = droppedItems
@@ -501,9 +563,13 @@ export default function Editor() {
             .map(item => ({
               id: item.id,
               patch: {
-                x: item.x + deltaX,
-                y: item.y + deltaY
-              }
+                x: snapToGrid
+                  ? snapToGridPosition(item.x + deltaX, item.y + deltaY).x
+                  : item.x + deltaX,
+                y: snapToGrid
+                  ? snapToGridPosition(item.x + deltaX, item.y + deltaY).y
+                  : item.y + deltaY,
+              },
             }));
 
           editorStore.batchUpdateItems(projectId, batchUpdates);
@@ -512,8 +578,10 @@ export default function Editor() {
       }
     }
 
-    editorStore.updateItem(projectId, itemId, updates);
+    // ---------- SINGLE ITEM UPDATE ----------
+    editorStore.updateItem(projectId, itemId, snappedUpdates);
   };
+
 
   const handleSelectItem = (itemId: number, e?: Konva.KonvaEventObject<MouseEvent>) => {
     const isCtrl = e?.evt.ctrlKey || e?.evt.metaKey;
@@ -541,7 +609,7 @@ export default function Editor() {
 
   // --- Connection Handlers ---
   // Add this function to cancel connection drawing
-  
+
   const handleGripMouseDown = (
     itemId: number,
     gripIndex: number,
@@ -657,6 +725,56 @@ export default function Editor() {
   }, [currentState, projectId, setCanvasState]);
   // -------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------
+  const GridLayer = React.memo(({
+  width,
+  height,
+  gridSize,
+  showGrid,
+}: {
+  width: number;
+  height: number;
+  gridSize: number;
+  showGrid: boolean;
+}) => {
+  if (!showGrid) return null;
+
+  return (
+    <Layer listening={false}>
+      <Shape
+        stroke="#9ca3af"
+        strokeWidth={1}
+        opacity={0.3}
+        perfectDrawEnabled={false}
+        sceneFunc={(context: CanvasRenderingContext2D, shape: Konva.Shape) => {
+          context.beginPath();
+          
+          // These bounds match your previous logic (-5000 to +5000)
+          // Ideally, you should calculate this based on the visible viewport,
+          // but this is much faster than the array method even with large bounds.
+          const startX = -5000;
+          const endX = width + 5000;
+          const startY = -5000;
+          const endY = height + 5000;
+
+          // Vertical Lines
+          for (let x = startX; x <= endX; x += gridSize) {
+            context.moveTo(x, startY);
+            context.lineTo(x, endY);
+          }
+
+          // Horizontal Lines
+          for (let y = startY; y <= endY; y += gridSize) {
+            context.moveTo(startX, y);
+            context.lineTo(endX, y);
+          }
+
+          // Konva specific method to apply styles (stroke, color, etc.)
+          context.fillStrokeShape(shape);
+        }}
+      />
+    </Layer>
+  );
+});
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -838,18 +956,7 @@ export default function Editor() {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
         >
-          {/* CSS Grid Background */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: showGrid 
-                ? "radial-gradient(#9ca3af 1px, transparent 1px)"
-                : "none",
-              backgroundSize: `${20 * stageScale}px ${20 * stageScale}px`,
-              backgroundPosition: `${stagePos.x}px ${stagePos.y}px`,
-              opacity: 0.5,
-            }}
-          />
+
 
 
           <Stage
@@ -918,6 +1025,12 @@ export default function Editor() {
             onMouseUp={handleStageMouseUp}
             onWheel={handleWheel}
           >
+            <GridLayer
+              width={stageSize.width}
+              height={stageSize.height}
+              gridSize={gridSize}
+              showGrid={showGrid}
+            />
             <Layer>
               {/* Render Connections */}
               {connections.map((connection: Connection) => (
@@ -1118,7 +1231,7 @@ export default function Editor() {
                 </span>
                 <div className="w-px h-3 bg-white/20" />
                 <span className="text-white/80 text-xs">
-                  Click empty space to add corner • Click target point to finish • Press Esc to cancel                
+                  Click empty space to add corner • Click target point to finish • Press Esc to cancel
                 </span>
               </div>
             </div>
