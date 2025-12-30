@@ -37,7 +37,6 @@ class CanvasState(models.Model):
     scaleX = models.FloatField(default=1)
     scaleY = models.FloatField(default=1)
     sequence = models.IntegerField()
-    connections = models.JSONField(default=list)
 
 class Connection(models.Model):
     sourceItemId = models.ForeignKey(CanvasState, on_delete=models.CASCADE, related_name="sources")
