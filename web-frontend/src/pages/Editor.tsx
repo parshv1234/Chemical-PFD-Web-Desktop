@@ -65,7 +65,8 @@ export default function Editor() {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(true);
-  const [gridSize] = useState(20);
+
+const [gridSize, setGridSize] = useState(20);  
 // In your state section, add:
   const [isImporting, setIsImporting] = useState(false);
   // Get editor store methods
