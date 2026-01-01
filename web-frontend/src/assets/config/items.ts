@@ -148,8 +148,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Compressors",
       object: "CentrifugalCompressor",
       args: [],
+<<<<<<< HEAD
       legend: "PRV",
       suffix: "",
+=======
+      legend: "C",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Centrifugal Compressor", "Compressors"),
     },
 
@@ -160,7 +165,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Compressors",
       object: "EjectorCompressor",
       args: [],
-      legend: "PRV",
+      legend: "C",
       suffix: "A/B",
       grips: getGripsForComponent("Ejector Compressor", "Compressors"),
     },
@@ -171,7 +176,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Compressors",
       object: "Fan",
       args: [],
-      legend: "E",
+      legend: "C",
       suffix: "A/B",
       grips: getGripsForComponent("Fan", "Compressors"),
     },
@@ -182,8 +187,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Compressors",
       object: "PositiveDisplacementCompressor",
       args: [],
+<<<<<<< HEAD
       legend: "SR",
       suffix: "",
+=======
+      legend: "C",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Positive Displacement Compressor",
         "Compressors",
@@ -196,8 +206,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Compressors",
       object: "ReciprocatingCompressor",
       args: [],
+<<<<<<< HEAD
       legend: "E",
       suffix: "A",
+=======
+      legend: "C",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Reciprocating Compressor", "Compressors"),
     },
     Turbine: {
@@ -207,8 +222,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Compressors",
       object: "Turbine",
       args: [],
+<<<<<<< HEAD
       legend: "P",
       suffix: "A",
+=======
+      legend: "C",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Turbine", "Compressors"),
     },
   },
@@ -220,8 +240,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Furnaces and Boilers",
       object: "OilGasOrPulverizedFuelFurnace",
       args: [],
+<<<<<<< HEAD
       legend: "SR",
       suffix: "B",
+=======
+      legend: "E",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Oil Gas or Pulverized Fuel Furnace",
         "Furnaces and Boilers",
@@ -234,8 +259,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Furnaces and Boilers",
       object: "SolidFuelFurnace",
       args: [],
+<<<<<<< HEAD
       legend: "C",
       suffix: "A",
+=======
+      legend: "E",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Solid Fuel Furnace", "Furnaces and Boilers"),
     },
     "One Cell Fired Heater, Furnace": {
@@ -245,8 +275,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Furnaces and Boilers",
       object: "OneCellFiredHeater,Furnace",
       args: [],
+<<<<<<< HEAD
       legend: "SR",
       suffix: "A/B",
+=======
+      legend: "E",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "One Cell Fired Heater",
         "Furnaces and Boilers",
@@ -259,8 +294,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Furnaces and Boilers",
       object: "TwoCellFiredHeater,Furnace",
       args: [],
+<<<<<<< HEAD
       legend: "SR",
       suffix: "A",
+=======
+      legend: "E",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Two Cell Fired Heater",
         "Furnaces and Boilers",
@@ -275,7 +315,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Heating or Cooling Arrangements",
       object: "Exchanger905",
       args: [],
-      legend: "PRV",
+      legend: "E",
       suffix: "",
       grips: getGripsForComponent(
         "905 Exchanger",
@@ -289,7 +329,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Heating or Cooling Arrangements",
       object: "KettleReboiler907",
       args: [],
-      legend: "SR",
+      legend: "E",
       suffix: "",
       grips: getGripsForComponent(
         "907 Kettle Reboiler",
@@ -303,8 +343,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Heating or Cooling Arrangements",
       object: "Exchanger",
       args: [],
+<<<<<<< HEAD
       legend: "PRV",
       suffix: "B",
+=======
+      legend: "E",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Exchanger",
         "Heating or Cooling Arrangements",
@@ -317,8 +362,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Heating or Cooling Arrangements",
       object: "HeatExchanger",
       args: [],
+<<<<<<< HEAD
       legend: "SR",
       suffix: "B",
+=======
+      legend: "E",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Heat Exchanger",
         "Heating or Cooling Arrangements",
@@ -332,7 +382,11 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       object: "ImmersionCoil",
       args: [],
       legend: "E",
+<<<<<<< HEAD
       suffix: "A",
+=======
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Immersion Coil",
         "Heating or Cooling Arrangements",
@@ -345,7 +399,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Heating or Cooling Arrangements",
       object: "KettleReboiler",
       args: [],
-      legend: "C",
+      legend: "E",
       suffix: "",
       grips: getGripsForComponent(
         "Kettle Reboiler",
@@ -361,8 +415,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Piping",
       object: "InflowLine",
       args: [],
+<<<<<<< HEAD
       legend: "E",
       suffix: "B",
+=======
+      legend: "",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Inflow Line", "Piping"),
     },
     "Outflow Line": {
@@ -372,7 +431,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Piping",
       object: "OutflowLine",
       args: [],
-      legend: "E",
+      legend: "",
       suffix: "",
       grips: getGripsForComponent("Outflow Line", "Piping"),
     },
@@ -385,8 +444,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Fittings",
       object: "ReducerExpander",
       args: [],
+<<<<<<< HEAD
       legend: "E",
       suffix: "A",
+=======
+      legend: "FT",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Reducer, Expander", "Fittings"),
     },
     Filter: {
@@ -396,8 +460,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Filter",
       object: "Filter",
       args: [],
+<<<<<<< HEAD
       legend: "C",
       suffix: "B",
+=======
+      legend: "FT",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Filter", "Fittings"),
     },
   },
@@ -409,8 +478,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Process Vessels",
       object: "HorizontalVessel",
       args: [],
+<<<<<<< HEAD
       legend: "SR",
       suffix: "B",
+=======
+      legend: "V",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Horizontal Vessel", "Process Vessels"),
     },
     "Packed Vessel": {
@@ -420,8 +494,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Process Vessels",
       object: "PackedVessel",
       args: [],
+<<<<<<< HEAD
       legend: "C",
       suffix: "B",
+=======
+      legend: "V",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Packed Vessel", "Process Vessels"),
     },
     "Trays or plates": {
@@ -431,6 +510,11 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Process Vessels",
       object: "TraysOrPlates",
       args: [],
+<<<<<<< HEAD
+=======
+      legend: "V",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
     },
     "Vertical Vessel": {
       name: "Vertical Vessel",
@@ -439,8 +523,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Process Vessels",
       object: "VerticalVessel",
       args: [],
+<<<<<<< HEAD
       legend: "SR",
       suffix: "A/B",
+=======
+      legend: "V",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Vertical Vessel", "Process Vessels"),
     },
   },
@@ -463,8 +552,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Pumps",
       object: "DuplexPump",
       args: [],
+<<<<<<< HEAD
       legend: "PRV",
       suffix: "",
+=======
+      legend: "P",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Duplex Pump", "Pumps"),
     },
     "Ejector(Vapor Service)": {
@@ -486,7 +580,11 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       object: "HandPumpWithDrum",
       args: [],
       legend: "P",
+<<<<<<< HEAD
       suffix: "A",
+=======
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Hand Pump with Drum", "Pumps"),
     },
     "Plunger Pump": {
@@ -497,7 +595,11 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       object: "PlungerPump",
       args: [],
       legend: "P",
+<<<<<<< HEAD
       suffix: "",
+=======
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Plunger Pump", "Pumps"),
     },
     "Proportioning Pump": {
@@ -507,7 +609,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Pumps",
       object: "ProportioningPump",
       args: [],
-      legend: "PRV",
+      legend: "P",
       suffix: "A/B",
       grips: getGripsForComponent("Proportioning Pump", "Pumps"),
     },
@@ -518,8 +620,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Pumps",
       object: "ReciprocatingPump",
       args: [],
+<<<<<<< HEAD
       legend: "E",
       suffix: "",
+=======
+      legend: "P",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Reciprocating Pump", "Pumps"),
     },
     "Centrifugal Pump": {
@@ -529,7 +636,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Pumps",
       object: "CentrifugalPump",
       args: [],
-      legend: "PRV",
+      legend: "P",
       suffix: "A/B",
       grips: getGripsForComponent("Centrifugal Pump", "Pumps"),
     },
@@ -542,8 +649,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Separators",
       object: "SeparatorsForLiquids,Decanter",
       args: [],
+<<<<<<< HEAD
       legend: "C",
       suffix: "B",
+=======
+      legend: "SEP",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Separators for Liquids, Decanter",
         "Separators",
@@ -558,8 +670,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Storage Vessels Tanks",
       object: "FixedRoofTank",
       args: [],
+<<<<<<< HEAD
       legend: "P",
       suffix: "A/B",
+=======
+      legend: "TK",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Fixed Roof Tank", "Storage Vessels Tanks"),
     },
     "Floating Roof Tank": {
@@ -569,7 +686,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Storage Vessels Tanks",
       object: "FloatingRoofTank",
       args: [],
-      legend: "SR",
+      legend: "TK",
       suffix: "",
       grips: getGripsForComponent(
         "Floating Roof Tank",
@@ -585,8 +702,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Valves",
       object: "GateValve",
       args: [],
+<<<<<<< HEAD
       legend: "E",
       suffix: "A",
+=======
+      legend: "PRV",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Gate Valve", "Valves"),
     },
     "Butterfly Valve": {
@@ -596,8 +718,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Valves",
       object: "ButterflyValve",
       args: [],
+<<<<<<< HEAD
       legend: "C",
       suffix: "",
+=======
+      legend: "PRV",
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Butterfly Valve", "Valves"),
     },
     "Float Valve": {
@@ -608,7 +735,11 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       object: "FloatValve",
       args: [],
       legend: "PRV",
+<<<<<<< HEAD
       suffix: "B",
+=======
+      suffix: "A/B",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Float Valve", "Valves"),
     },
     "Globe Valve": {
@@ -618,7 +749,7 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Valves",
       object: "GlobeValve",
       args: [],
-      legend: "P",
+      legend: "PRV",
       suffix: "A/B",
       grips: getGripsForComponent("Globe Valve", "Valves"),
     },
@@ -631,8 +762,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Dryers",
       object: "ContinuousDryer",
       args: [],
+<<<<<<< HEAD
       legend: "P",
       suffix: "A",
+=======
+      legend: "D",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Continuous Dryer", "Dryers"),
     },
   },
@@ -644,8 +780,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Size Reduction Equipements",
       object: "JawCrusher",
       args: [],
+<<<<<<< HEAD
       legend: "P",
       suffix: "A/B",
+=======
+      legend: "SR",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("Jaw Crusher", "Size Reduction Equipements"),
     },
     "Roller Crusher": {
@@ -656,7 +797,11 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       object: "RollerCrusher",
       args: [],
       legend: "SR",
+<<<<<<< HEAD
       suffix: "B",
+=======
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent(
         "Roller Crusher",
         "Size Reduction Equipements",
@@ -671,8 +816,13 @@ export const componentsConfig: Record<string, Record<string, ComponentItem>> = {
       class: "Feeders",
       object: "GeneralSymbol",
       args: [],
+<<<<<<< HEAD
       legend: "P",
       suffix: "A/B",
+=======
+      legend: "FD",
+      suffix: "",
+>>>>>>> 87835cb8361b3f6070ac50f7d3033f49db799240
       grips: getGripsForComponent("General Symbol", "Feeders"),
     },
   },
