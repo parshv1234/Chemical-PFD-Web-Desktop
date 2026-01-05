@@ -50,6 +50,13 @@ import {
   validateExportData,
   migrateExportData,
 } from "@/utils/diagramExport";
+import { SaveConfirmationModal } from "@/components/SaveConfirmationModal";
+import {
+  getProject,
+  saveProject,
+  type SavedProject,
+  convertToBackendFormat,
+} from "@/utils/projectStorage";
 
 type Shortcut = {
   key: string;
@@ -69,6 +76,9 @@ export default function Editor() {
   const [gridSize, setGridSize] = useState(20);
   // In your state section, add:
   const [isImporting, setIsImporting] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [projectMetadata, setProjectMetadata] = useState<Pick<SavedProject, 'name' | 'description'> | null>(null);
+
   // Get editor store methods
   const editorStore = useEditorStore();
 
@@ -79,12 +89,46 @@ export default function Editor() {
     return editorStore.getEditorState(projectId);
   }, [projectId, editorStore]);
 
-  // Initialize editor when projectId changes
+  // Initialize editor when projectId changes and load from localStorage
   useEffect(() => {
-    if (projectId) {
+    if (!projectId) return;
+
+    // Try to load project from localStorage
+    const savedProject = getProject(Number(projectId));
+
+    if (savedProject) {
+      // Load project metadata
+      setProjectMetadata({
+        name: savedProject.name,
+        description: savedProject.description,
+      });
+
+      // Hydrate editor with saved canvas state
+      editorStore.hydrateEditor(projectId, {
+        items: savedProject.canvas_state.items,
+        connections: savedProject.canvas_state.connections,
+        counts: {}, // Will be recalculated
+        sequenceCounter: savedProject.canvas_state.sequence_counter,
+      });
+
+      // Restore viewport settings if available
+      if (savedProject.viewport) {
+        setStageScale(savedProject.viewport.scale);
+        setStagePos(savedProject.viewport.position);
+        setGridSize(savedProject.viewport.gridSize);
+        setShowGrid(savedProject.viewport.showGrid);
+        setSnapToGrid(savedProject.viewport.snapToGrid);
+      }
+    } else {
+      // New project, just initialize
       editorStore.initEditor(projectId);
+      setProjectMetadata({
+        name: `Project ${projectId}`,
+        description: null,
+      });
     }
-  }, [projectId, editorStore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]); // Only depend on projectId, not editorStore
 
   // Extract data from current state
   const droppedItems = useMemo(() => {
@@ -192,95 +236,145 @@ export default function Editor() {
     }
   };
   // In your Editor.tsx handleExport function:
-const handleExport = async (options: ExportOptions) => {
-  if (!projectId || !currentState) {
-    alert('No project loaded');
-    return;
-  }
+  const handleExport = async (options: ExportOptions) => {
+    if (!projectId || !currentState) {
+      alert('No project loaded');
+      return;
+    }
 
-  setIsExporting(true);
+    setIsExporting(true);
 
-  // Save current grid state for image exports
-  const originalShowGrid = showGrid;
+    // Save current grid state for image exports
+    const originalShowGrid = showGrid;
 
-  try {
-    if (options.format === 'export') {
-      // Custom diagram file export
-      const exportData = createExportData(
-        currentState,
+    try {
+      if (options.format === 'export') {
+        // Custom diagram file export
+        const exportData = createExportData(
+          currentState,
+          {
+            scale: stageScale,
+            position: stagePos,
+            gridSize: gridSize,
+            showGrid: showGrid,
+            snapToGrid: snapToGrid,
+          },
+          projectId,
+          `Diagram ${projectId}`
+        );
+
+        // Use the filename from options or generate default
+        const fileName = options.filename
+          ? `${options.filename}.pfd`
+          : `diagram-${projectId}.pfd`;
+
+        exportToDiagramFile(exportData, fileName);
+        setShowExportModal(false);
+        return;
+      }
+
+      // Original image export code
+      if (!stageRef.current) {
+        throw new Error('Stage not available');
+      }
+
+      // Temporarily update grid visibility for image exports
+      if (options.includeGrid !== undefined) {
+        setShowGrid(options.includeGrid);
+      }
+
+      // Force a re-render to update the canvas
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Use the updated exportDiagram function with connections
+      const result = await exportDiagram(
+        stageRef.current,
+        droppedItems,
         {
+          ...options,
+          connections: connections,
+        }
+      );
+
+      // Use the filename from options with correct extension
+      let filename: string;
+      if (options.filename) {
+        // Ensure correct extension based on format
+        const extension = options.format === 'pdf' ? '.pdf' :
+          options.format === 'jpg' ? '.jpg' : '.png';
+
+        // Check if filename already has extension
+        const hasCorrectExtension = options.filename.toLowerCase().endsWith(extension);
+        filename = hasCorrectExtension ? options.filename : `${options.filename}${extension}`;
+      } else {
+        // Default filename
+        const timestamp = new Date().toISOString().split('T')[0];
+        filename = `diagram-${timestamp}.${options.format}`;
+      }
+
+      downloadBlob(result as Blob, filename);
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert(`Export failed: ${(error as Error).message}`);
+    } finally {
+      // Always restore original grid state for image exports
+      if (options.format !== 'export') {
+        setShowGrid(originalShowGrid);
+      }
+      setIsExporting(false);
+    }
+  };
+
+  // Handle save changes to localStorage
+  const handleSaveChanges = () => {
+    if (!projectId || !currentState || !projectMetadata) {
+      alert('No project loaded');
+      return;
+    }
+
+    try {
+      // Convert current editor state to backend format
+      const canvasState = convertToBackendFormat(
+        Number(projectId),
+        currentState.items,
+        currentState.connections,
+        currentState.sequenceCounter || 0
+      );
+
+      // Create or update project
+      const projectToSave: SavedProject = {
+        id: Number(projectId),
+        name: projectMetadata.name,
+        description: projectMetadata.description,
+        created_at: new Date().toISOString(), // Will be overridden if existing
+        updated_at: new Date().toISOString(),
+        canvas_state: canvasState,
+        viewport: {
           scale: stageScale,
           position: stagePos,
           gridSize: gridSize,
           showGrid: showGrid,
           snapToGrid: snapToGrid,
         },
-        projectId,
-        `Diagram ${projectId}`
-      );
+      };
 
-      // Use the filename from options or generate default
-      const fileName = options.filename 
-        ? `${options.filename}.pfd` 
-        : `diagram-${projectId}.pfd`;
-      
-      exportToDiagramFile(exportData, fileName);
-      setShowExportModal(false);
-      return;
-    }
-
-    // Original image export code
-    if (!stageRef.current) {
-      throw new Error('Stage not available');
-    }
-
-    // Temporarily update grid visibility for image exports
-    if (options.includeGrid !== undefined) {
-      setShowGrid(options.includeGrid);
-    }
-
-    // Force a re-render to update the canvas
-    await new Promise(resolve => setTimeout(resolve, 50));
-
-    // Use the updated exportDiagram function with connections
-    const result = await exportDiagram(
-      stageRef.current,
-      droppedItems,
-      {
-        ...options,
-        connections: connections,
+      // Check if project already exists
+      const existing = getProject(Number(projectId));
+      if (existing) {
+        projectToSave.created_at = existing.created_at;
       }
-    );
 
-    // Use the filename from options with correct extension
-    let filename: string;
-    if (options.filename) {
-      // Ensure correct extension based on format
-      const extension = options.format === 'pdf' ? '.pdf' : 
-                       options.format === 'jpg' ? '.jpg' : '.png';
-      
-      // Check if filename already has extension
-      const hasCorrectExtension = options.filename.toLowerCase().endsWith(extension);
-      filename = hasCorrectExtension ? options.filename : `${options.filename}${extension}`;
-    } else {
-      // Default filename
-      const timestamp = new Date().toISOString().split('T')[0];
-      filename = `diagram-${timestamp}.${options.format}`;
-    }
+      // Save to localStorage
+      saveProject(projectToSave);
 
-    downloadBlob(result as Blob, filename);
-    setShowExportModal(false);
-  } catch (error) {
-    console.error('Export failed:', error);
-    alert(`Export failed: ${(error as Error).message}`);
-  } finally {
-    // Always restore original grid state for image exports
-    if (options.format !== 'export') {
-      setShowGrid(originalShowGrid);
+      alert(`Project "${projectMetadata.name}" saved successfully!`);
+    } catch (error) {
+      console.error('Save failed:', error);
+      alert(`Save failed: ${(error as Error).message}`);
     }
-    setIsExporting(false);
-  }
-};
+  };
+
   useEffect(() => {
     if (showExportModal) {
       // Clear all selections when export modal opens
@@ -911,22 +1005,6 @@ const handleExport = async (options: ExportOptions) => {
             </Button>
           </Tooltip>
           <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-2" />
-          <Dropdown>
-            <DropdownTrigger>
-              <Button
-                className="text-gray-700 dark:text-gray-300"
-                size="sm"
-                variant="light"
-              >
-                File
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="File Actions">
-              <DropdownItem key="new">New Diagram</DropdownItem>
-              <DropdownItem key="save">Save Project (Ctrl+S)</DropdownItem>
-              <DropdownItem key="export">Export as PDF</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
 
           <Dropdown>
             <DropdownTrigger>
@@ -1021,6 +1099,14 @@ const handleExport = async (options: ExportOptions) => {
           <Button
             className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
             size="sm"
+            variant="bordered"
+
+          >
+            New Project
+          </Button>
+          <Button
+            className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+            size="sm"
             startContent={<TbFileImport />}
             variant="bordered"
             onPress={() => {
@@ -1057,6 +1143,8 @@ const handleExport = async (options: ExportOptions) => {
           <Button
             className="bg-blue-600 text-white hover:bg-blue-700"
             size="sm"
+            onPress={() => setShowSaveModal(true)}
+            isDisabled={!projectId}
           >
             Save Changes
           </Button>
@@ -1531,6 +1619,16 @@ const handleExport = async (options: ExportOptions) => {
           editorId={projectId ?? ""}
           open={showReportModal}
           onClose={() => setShowReportModal(false)}
+        />
+
+        {/* Save Confirmation Modal */}
+        <SaveConfirmationModal
+          isOpen={showSaveModal}
+          onClose={() => setShowSaveModal(false)}
+          onConfirm={handleSaveChanges}
+          projectName={projectMetadata?.name || 'Untitled Project'}
+          itemCount={droppedItems.length}
+          connectionCount={connections.length}
         />
       </div>
     </div>
