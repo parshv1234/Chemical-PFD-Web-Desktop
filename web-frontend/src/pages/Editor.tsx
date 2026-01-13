@@ -75,6 +75,17 @@ type Shortcut = {
   requireCtrl?: boolean;
 };
 
+// Helper to resolve image URLs
+const resolveImageUrl = (url: string) => {
+  if (!url) return "";
+  // Check if it's a data URI or already absolute
+  if (url.startsWith("data:") || url.startsWith("http")) return url;
+  // If relative path (e.g. /media/...), prepend backend host
+  // Assuming backend is at localhost:8000 based on projectApi.ts
+  if (url.startsWith("/")) return `http://localhost:8000${url}`;
+  return url;
+};
+
 export default function Editor() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -112,71 +123,6 @@ export default function Editor() {
     return editorStore.getEditorState(projectId);
   }, [projectId, editorStore]);
 
-  // Initialize editor when projectId changes and load from localStorage
-  // useEffect(() => {
-  //   if (!projectId) return;
-
-  //   // Try to load project from localStorage
-  //   const savedProject = getProject(Number(projectId));
-
-  //   if (savedProject) {
-  //     // Load project metadata
-  //     setProjectMetadata({
-  //       name: savedProject.name,
-  //       description: savedProject.description,
-  //     });
-
-  //     // Hydrate editor with saved canvas state
-  //     // Convert BackendCanvasItem to CanvasItem format
-  //     const canvasItems = savedProject.canvas_state.items.map(item => ({
-  //       id: item.id,
-  //       name: item.name || item.object || 'Component',
-  //       icon: item.png || item.svg || '',
-  //       svg: item.svg || '',
-  //       class: item.object || '',
-  //       object: item.object || '',
-  //       args: [],
-  //       addedAt: Date.now(),
-  //       x: item.x,
-  //       y: item.y,
-  //       width: item.width,
-  //       height: item.height,
-  //       rotation: item.rotation,
-  //       scaleX: item.scaleX,
-  //       scaleY: item.scaleY,
-  //       sequence: item.sequence,
-  //       label: item.label,
-  //       grips: item.grips,
-  //       legend: item.legend,
-  //       suffix: item.suffix,
-  //       png: item.png,
-  //     } as any));
-
-  //     editorStore.hydrateEditor(projectId, {
-  //       items: canvasItems,
-  //       connections: savedProject.canvas_state.connections,
-  //       counts: {}, // Will be recalculated
-  //       sequenceCounter: savedProject.canvas_state.sequence_counter,
-  //     });
-
-  //     // Restore viewport settings if available
-  //     if (savedProject.viewport) {
-  //       setStageScale(savedProject.viewport.scale);
-  //       setStagePos(savedProject.viewport.position);
-  //       setGridSize(savedProject.viewport.gridSize);
-  //       setShowGrid(savedProject.viewport.showGrid);
-  //       setSnapToGrid(savedProject.viewport.snapToGrid);
-  //     }
-  //   } else {
-  //     // New project, just initialize
-  //     editorStore.initEditor(projectId);
-  //     setProjectMetadata({
-  //       name: `Project ${projectId}`,
-  //       description: null,
-  //     });
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [projectId]); // Only depend on projectId, not editorStore
   useEffect(() => {
     if (!projectId) return;
 
@@ -210,7 +156,9 @@ export default function Editor() {
               item.object ||
               item.name ||
               (item.component ? item.component.name : "");
-
+            const rawSvg = item.svg || "";
+            const rawPng = item.png || "";
+            
             return {
               id: item.id,
               name:
@@ -218,8 +166,8 @@ export default function Editor() {
                 (item.component && item.component.name) ||
                 objectKey ||
                 "Component",
-              icon: item.png || "",
-              svg: item.svg || "",
+              icon: resolveImageUrl(rawPng || rawSvg),
+              svg: resolveImageUrl(rawSvg),
               class: item.object || item.class || "",
               object:
                 item.object || (item.component && item.component.name) || "",
@@ -237,7 +185,8 @@ export default function Editor() {
               grips: item.grips ?? [],
               legend: item.legend ?? "",
               suffix: item.suffix ?? "",
-              png: item.png ?? "",
+              png: resolveImageUrl(rawPng),
+              component_id: item.component_id, // Ensure this is preserved
               objectKey,
             } as any;
           });
@@ -589,82 +538,6 @@ export default function Editor() {
   useEffect(() => {
     if (!currentState || lastSavedState) return;
 
-    const handleSaveChanges = async () => {
-      if (!projectId || !currentState || !projectMetadata) {
-        alert("No project loaded");
-
-        return;
-      }
-
-      try {
-        // Convert editor state → backend format
-        const canvasState = convertToBackendFormat(
-          Number(projectId),
-          currentState.items,
-          currentState.connections,
-          currentState.sequenceCounter || 0,
-        );
-
-        // 🔒 TEMP SAFE FIX — FILTER INVALID ITEMS
-        const safeItems = (canvasState.items || []).filter(
-          (item: any) =>
-            typeof item.component_id === "number" && item.component_id > 0,
-        );
-
-        if (safeItems.length !== canvasState.items.length) {
-          console.warn(
-            "Dropped invalid canvas items before save:",
-            canvasState.items.filter(
-              (i: any) => !i.component_id || i.component_id <= 0,
-            ),
-          );
-        }
-
-        const safeCanvasState = {
-          ...canvasState,
-          items: safeItems,
-        };
-
-        // Prepare payload
-        const payload = {
-          name: projectMetadata.name,
-          description: projectMetadata.description,
-          canvas_state: safeCanvasState,
-          viewport: {
-            scale: stageScale,
-            position: stagePos,
-            gridSize,
-            showGrid,
-            snapToGrid,
-          },
-        };
-
-        // PUT to backend
-        const updated = await saveProjectCanvas(Number(projectId), payload);
-
-        // Update local save tracking
-        const savedStateStr = JSON.stringify({
-          items: currentState.items,
-          connections: currentState.connections,
-        });
-
-        setLastSavedState(savedStateStr);
-        setHasUnsavedChanges(false);
-
-        if (updated && updated.name) {
-          setProjectMetadata({
-            name: updated.name,
-            description: updated.description ?? null,
-          });
-        }
-
-        alert(`Project "${projectMetadata.name}" saved successfully!`);
-      } catch (error) {
-        console.error("Save failed:", error);
-        alert(`Save failed: ${(error as Error).message}`);
-      }
-    };
-
     // Initialize on first load only (when lastSavedState is null)
     const currentStateStr = JSON.stringify({
       items: currentState.items,
@@ -765,7 +638,7 @@ export default function Editor() {
   }, [showExportModal]);
 
   // --- State ---
-  const { components } = useComponents();
+  const { components, isLoading, error } = useComponents();
   const handleZoomIn = () => {
     setStageScale((prev) => Math.min(3, prev + 0.1));
   };
@@ -829,6 +702,7 @@ export default function Editor() {
     Set<number>
   >(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Connection drawing state
   const [isDrawingConnection, setIsDrawingConnection] = useState(false);
@@ -1289,10 +1163,10 @@ export default function Editor() {
           setTempConnection((prev: any) =>
             prev
               ? {
-                  ...prev,
-                  currentX: pointer.x,
-                  currentY: pointer.y,
-                }
+                ...prev,
+                currentX: pointer.x,
+                currentY: pointer.y,
+              }
               : null,
           );
         }
@@ -1572,8 +1446,12 @@ export default function Editor() {
             <ComponentLibrarySidebar
               components={components}
               initialSearchQuery={searchQuery}
+              selectedCategory={selectedCategory}
+              isLoading={isLoading}
+              error={error}
+              onCategoryChange={(cat) => setSelectedCategory(cat)}
               onDragStart={handleDragStart}
-              onSearch={setSearchQuery}
+              onSearch={(q) => setSearchQuery(q)}
             />
           )}
         </div>
@@ -1688,12 +1566,12 @@ export default function Editor() {
                     setTempConnection((prev: any) =>
                       prev
                         ? {
-                            ...prev,
-                            waypoints: [
-                              ...prev.waypoints,
-                              { x: pointer.x, y: pointer.y },
-                            ],
-                          }
+                          ...prev,
+                          waypoints: [
+                            ...prev.waypoints,
+                            { x: pointer.x, y: pointer.y },
+                          ],
+                        }
                         : prev,
                     );
                   }
