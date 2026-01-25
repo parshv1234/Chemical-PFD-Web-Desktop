@@ -473,7 +473,9 @@ class CanvasScreen(QMainWindow):
 
     def open_add_symbol_dialog(self):
         from src.add_symbol_dialog import AddSymbolDialog
-        dlg = AddSymbolDialog(self)
+        # Get current theme from manager
+        current_theme = theme_manager.current_theme
+        dlg = AddSymbolDialog(self, theme=current_theme)
         if dlg.exec_() == QtWidgets.QDialog.Accepted:
             self.library.reload_components()
 

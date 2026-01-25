@@ -70,6 +70,7 @@ def serialize_canvas_state(canvas):
         
         item = {
             "id": safe_id,    # Sends 1, 2, 3... (Backend accepts this)
+            "component_id": component_backend_id,
             "component": {
                 "id": component_backend_id
             },
@@ -133,6 +134,7 @@ def save_canvas_state(canvas):
     
     result = update_project(
         project_id=canvas.project_id,
+        name=canvas.project_name,
         canvas_state=canvas_state
     )
     
