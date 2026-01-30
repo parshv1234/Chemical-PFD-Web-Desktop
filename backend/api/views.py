@@ -74,6 +74,13 @@ class ComponentListView(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         # ... (list method remains same) ...
         queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.filter(
+        svg__isnull=False,
+        png__isnull=False,
+        ).exclude(
+        svg='',
+        png='',
+        )
         serializer = self.get_serializer(queryset, many=True, context={'request': request})
         return Response({"components": serializer.data}, status=status.HTTP_200_OK)
 
